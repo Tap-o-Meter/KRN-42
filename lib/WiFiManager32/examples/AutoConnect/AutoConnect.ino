@@ -14,7 +14,7 @@ boolean isConected = false;
 
 void setup() {
     // put your setup code here, to run once:
-    Serial.begin(115200);
+    Serial2.begin(115200);
 
     //WiFiManager
     //Local intialization. Once its business is done, there is no need to keep it around
@@ -35,7 +35,7 @@ void setup() {
 
     
     //if you get here you have connected to the WiFi
-    Serial.println("connected...yeey :)");
+    Serial2.println("connected...yeey :)");
     isConected = true;
 }
 
@@ -45,31 +45,31 @@ void loop() {
 
     HTTPClient http;
 
-    Serial.print("[HTTP] begin...\n");
+    Serial2.print("[HTTP] begin...\n");
     if (http.begin(client, "http://facebook.github.io/react-native/movies.json")) {  // HTTP
 
 
-      Serial.print("[HTTP] GET...\n");
+      Serial2.print("[HTTP] GET...\n");
       // start connection and send HTTP header
       int httpCode = http.GET();
 
       // httpCode will be negative on error
       if (httpCode > 0) {
         // HTTP header has been send and Server response header has been handled
-        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        Serial2.printf("[HTTP] GET... code: %d\n", httpCode);
 
         // file found at server
         if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
           String payload = http.getString();
-          Serial.println(payload);
+          Serial2.println(payload);
         }
       } else {
-        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        Serial2.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
       }
 
       http.end();
     } else {
-      Serial.printf("[HTTP} Unable to connect\n");
+      Serial2.printf("[HTTP} Unable to connect\n");
     }
         delay(10000);
       }

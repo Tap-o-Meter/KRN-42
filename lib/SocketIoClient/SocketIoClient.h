@@ -6,7 +6,7 @@
 #include <vector>
 #include <WebSocketsClient.h>
 
-#define SOCKETIOCLIENT_DEBUG(...) Serial.printf(__VA_ARGS__);
+#define SOCKETIOCLIENT_DEBUG(...) Serial2.printf(__VA_ARGS__);
 //#define SOCKETIOCLIENT_DEBUG(...)
 
 #define PING_INTERVAL 1000 //TODO: use socket.io server response

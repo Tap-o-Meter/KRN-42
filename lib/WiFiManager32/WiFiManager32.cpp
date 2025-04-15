@@ -374,7 +374,7 @@ int WiFiManager32::connectWifi(String ssid, String pass) {
     int intents = 0;
     while(WiFi.status() != WL_CONNECTED){
       WiFi.begin(ssid.c_str(), pass.c_str()); // Connect to WPA/WPA2 network. Change this line if using open or WEP network
-      Serial.print(".");
+      Serial2.print(".");
       intents++;
       if (intents > 30) break;
       delay(2000);
@@ -386,7 +386,7 @@ int WiFiManager32::connectWifi(String ssid, String pass) {
       int intents = 0;
       while(WiFi.status() != WL_CONNECTED){
         WiFi.begin(); // Connect to WPA/WPA2 network. Change this line if using open or WEP network
-        Serial.print(".");
+        Serial2.print(".");
         intents++;
         if (intents > 30) break;
         delay(2000);
@@ -612,8 +612,8 @@ void WiFiManager32::setRemoveDuplicateAPs(boolean removeDuplicates) {
 template <typename Generic>
 void WiFiManager32::DEBUG_WM(Generic text) {
   if (_debug) {
-    Serial.print("*WM: ");
-    Serial.println(text);
+    Serial2.print("*WM: ");
+    Serial2.println(text);
   }
 }
 

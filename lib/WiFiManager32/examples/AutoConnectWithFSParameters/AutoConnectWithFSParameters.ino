@@ -19,30 +19,30 @@ bool shouldSaveConfig = false;
 
 //callback notifying us of the need to save config
 void saveConfigCallback () {
-  Serial.println("Should save config");
+  Serial2.println("Should save config");
   shouldSaveConfig = true;
 }
 
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println();
+  Serial2.begin(115200);
+  Serial2.println();
 
   //clean FS, for testing
   //SPIFFS.format();
 
   //read configuration from FS json
-  Serial.println("mounting FS...");
+  Serial2.println("mounting FS...");
 
   if (SPIFFS.begin()) {
-    Serial.println("mounted file system");
+    Serial2.println("mounted file system");
     if (SPIFFS.exists("/config.json")) {
       //file exists, reading and loading
-      Serial.println("reading config file");
+      Serial2.println("reading config file");
       File configFile = SPIFFS.open("/config.json", "r");
       if (configFile) {
-        Serial.println("opened config file");
+        Serial2.println("opened config file");
         size_t size = configFile.size();
         // Allocate a buffer to store contents of the file.
         std::unique_ptr<char[]> buf(new char[size]);
@@ -52,20 +52,20 @@ void setup() {
         JsonObject& json = jsonBuffer.parseObject(buf.get());
         json.printTo(Serial);
         if (json.success()) {
-          Serial.println("\nparsed json");
+          Serial2.println("\nparsed json");
 
           strcpy(mqtt_server, json["mqtt_server"]);
           strcpy(mqtt_port, json["mqtt_port"]);
           strcpy(blynk_token, json["blynk_token"]);
 
         } else {
-          Serial.println("failed to load json config");
+          Serial2.println("failed to load json config");
         }
         configFile.close();
       }
     }
   } else {
-    Serial.println("failed to mount FS");
+    Serial2.println("failed to mount FS");
   }
   //end read
 
@@ -110,7 +110,7 @@ void setup() {
   //here  "AutoConnectAP"
   //and goes into a blocking loop awaiting configuration
   if (!wifiManager.autoConnect("AutoConnectAP", "password")) {
-    Serial.println("failed to connect and hit timeout");
+    Serial2.println("failed to connect and hit timeout");
     delay(3000);
     //reset and try again, or maybe put it to deep sleep
     ESP.reset();
@@ -118,7 +118,7 @@ void setup() {
   }
 
   //if you get here you have connected to the WiFi
-  Serial.println("connected...yeey :)");
+  Serial2.println("connected...yeey :)");
 
   //read updated parameters
   strcpy(mqtt_server, custom_mqtt_server.getValue());
@@ -127,7 +127,7 @@ void setup() {
 
   //save the custom parameters to FS
   if (shouldSaveConfig) {
-    Serial.println("saving config");
+    Serial2.println("saving config");
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.createObject();
     json["mqtt_server"] = mqtt_server;
@@ -136,7 +136,7 @@ void setup() {
 
     File configFile = SPIFFS.open("/config.json", "w");
     if (!configFile) {
-      Serial.println("failed to open config file for writing");
+      Serial2.println("failed to open config file for writing");
     }
 
     json.printTo(Serial);
@@ -145,8 +145,8 @@ void setup() {
     //end save
   }
 
-  Serial.println("local ip");
-  Serial.println(WiFi.localIP());
+  Serial2.println("local ip");
+  Serial2.println(WiFi.localIP());
 
 }
 

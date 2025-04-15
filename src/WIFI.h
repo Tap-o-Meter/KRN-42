@@ -1,11 +1,11 @@
 #ifndef MY_WIFI_H
 #define MY_WIFI_H
 #include "EEPROM.h"
+#include "Logger.h"
 #include <Arduino.h>
 #include <ESPmDNS.h>
 #include <WiFiMulti.h>
 #include <ArduinoOTA.h>
-#include <WiFiManager32.h>
 #include <Preferences.h>
 // #include <WiFiUdp.h>
 // #include "secrets.h"
@@ -32,8 +32,11 @@ class WIFI {
     // bool getConnectionStatus();
   private:
     uint32_t retry_connection_in = 0;
-    WiFiManager32 wifiManager;
     Preferences preferences;
     // bool last_connection_state = false;
+
+    //Logger
+    void DEBUG(const char *message);
+    // void ERROR(ErrorType error);
 };
 #endif

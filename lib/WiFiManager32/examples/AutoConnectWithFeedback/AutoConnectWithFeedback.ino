@@ -6,15 +6,15 @@
 #include "WiFiManager.h"          //https://github.com/tzapu/WiFiManager
 
 void configModeCallback (WiFiManager *myWiFiManager) {
-  Serial.println("Entered config mode");
-  Serial.println(WiFi.softAPIP());
+  Serial2.println("Entered config mode");
+  Serial2.println(WiFi.softAPIP());
   //if you used auto generated SSID, print it
-  Serial.println(myWiFiManager->getConfigPortalSSID());
+  Serial2.println(myWiFiManager->getConfigPortalSSID());
 }
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
+  Serial2.begin(115200);
   
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
@@ -30,14 +30,14 @@ void setup() {
   //here  "AutoConnectAP"
   //and goes into a blocking loop awaiting configuration
   if(!wifiManager.autoConnect()) {
-    Serial.println("failed to connect and hit timeout");
+    Serial2.println("failed to connect and hit timeout");
     //reset and try again, or maybe put it to deep sleep
     ESP.reset();
     delay(1000);
   } 
 
   //if you get here you have connected to the WiFi
-  Serial.println("connected...yeey :)");
+  Serial2.println("connected...yeey :)");
  
 }
 

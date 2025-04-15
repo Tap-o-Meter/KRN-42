@@ -1,8 +1,8 @@
 // Use this file to store all of the private credentials
 // and connection details
 
-#define SECRET_SSID "Lastra"		// replace MySSID with your WiFi network name
-#define SECRET_PASS "elastra21"
+#define SECRET_SSID "ChikillaBarra"		// replace MySSID with your WiFi network name
+#define SECRET_PASS "ta010116"
 #define RST_PIN 22
 #define SS_PIN 21
 
@@ -14,9 +14,11 @@
 #define SERVING_TIME_OUT 300000 // About 5 Mins
 
 // ------------------------------>   Socket IO   <------------------------------
-#define PORT 3000
+#define PORT 3001
 
 // ------------------------------>     I/O's     <------------------------------
 #define FLOWMETER_PIN 13
 #define VALVE_PIN 32
+
+#define BLUETOOTH_SERIAL
 

@@ -87,3 +87,10 @@ boolean Reader::on() {
   }
   return false;
 }
+
+
+void Reader::DEBUG(const char *message){
+  char buffer[100];
+  snprintf(buffer, sizeof(buffer), "[Reader]: %s", message);
+  logger.println(buffer);
+}

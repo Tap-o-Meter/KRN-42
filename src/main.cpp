@@ -1,4 +1,6 @@
 #include "main.h"
+#include <esp_log.h>
+
 
 WIFI wifi;
 Line line;
@@ -12,12 +14,13 @@ int8_t remote_concept = NONE;
 volatile uint16_t pulse_counter = 0;
 bool reset = false, selecting_opt = false, loading = false, redeem_beer = false, remote_sell;
 
-//newClient
-
 //-------------------------------------->Set UP
 void setup() {
-  Serial2.begin(115200);
-  Serial2.setDebugOutput(false);
+  logger.init();
+  // Serial2.begin(115200);
+  // Serial2.setDebugOutput(false);
+  // Serial2.setDebugOutput(true);
+  SPIFFS.begin(true);
 
   pinMode(VALVE_PIN, OUTPUT);
   pinMode(FLOWMETER_PIN, OUTPUT);
@@ -42,11 +45,6 @@ void setup() {
   if (no_tries > 4) bootOptions();
 
   pinMode(FLOWMETER_PIN, INPUT);
-
-  if (!SPIFFS.begin(true)) {
-    Serial.println("An error has occurred while mounting SPIFFS");
-    return;
-  }
 }
 
 void loop() {
@@ -59,6 +57,7 @@ void loop() {
   screen.LockScreen();
   detachInterrupt(FLOWMETER_PIN);
   // screen.setTouchEneable(true);
+
   while (!reset) {
     if (!wifi.isConnected()) {
       wifi.reconnect(true);
@@ -86,6 +85,19 @@ void loop() {
       // webSocket.emit(SET_UP, set_up.c_str());
       api.requestLineData();
       screen.tapCard();
+    }
+
+    else if (line.theresPendingOrder()) {
+      screen.isServing = true;
+      const bool finished = countQty("", line.getPouringOrder().ml);
+
+      const String user = line.getPouringOrder().user;
+      const String concept = line.getPouringOrder().concept;
+      const String pouredVolume = (String)(pulse_counter/(screen.ppm*1000));
+
+      commitPurchase(concept, pouredVolume, user);
+      line.removePouringOrder();
+      screen.LockScreen();
     }
 
     handleTouch();
@@ -126,7 +138,7 @@ void lineUnlocked(){
 //-------------------------------------->Socket Handlers
 void event(const char * payload, size_t length) {
   //THIS IS FOR DEBUGGING PURPOSES
-  Serial2.printf("got message: %s\n", payload);
+  DEBUG(("got message:"+ String(payload)).c_str());
 }
 
 void onNewEmergencyCard(const char * payload, size_t length) {
@@ -138,7 +150,7 @@ void onConnect(const char * payload, size_t length) {
 }
 
 void onDisconnect(const char * payload, size_t length) {
-  // Serial2.println("Valio madre");
+  // DEBUG("Valio madre");
 }
 
 void onRemoteSell(const char * payload, size_t length) {
@@ -148,8 +160,8 @@ void onRemoteSell(const char * payload, size_t length) {
   // loading = false;
   screen.hideLoadingModal();
   if (error) {
-    Serial2.print(F("deserializeJson() failed with code "));
-    Serial2.println(error.c_str());
+    DEBUG("deserializeJson() failed with code ");
+    DEBUG(error.c_str());
   }
   json_response = doc.as<JsonObject>();
   if (json_response["confirmation"].as<String>().equals("success")) {
@@ -168,7 +180,7 @@ void onDisconnectedLine(const char * payload, size_t length){
   screen.removeInfo();
   reset = true;
   line.setLineStatus(DISCONNECTED);
-  Serial2.println("tiene que estar desconectada");
+  DEBUG("tiene que estar desconectada");
 }
 
 void onInfoRecived(const char * payload, size_t length) {
@@ -177,7 +189,7 @@ void onInfoRecived(const char * payload, size_t length) {
   line.setLineStatus(CONNECTED);
   const String new_emergency_card = screen.emergencyCard;
   const String old_emergency_card = line.getEmergencyCardFromMemory();
-  Serial2.println(old_emergency_card);
+  DEBUG(old_emergency_card.c_str());
   if (!line.compareEmergencyCard(new_emergency_card)) line.saveEmergencyCard(new_emergency_card.c_str());
   reset = true;
 }
@@ -185,7 +197,7 @@ void onInfoRecived(const char * payload, size_t length) {
 void onClaimBeer(const char * payload, size_t length) {
   reader.setClient("N/A", "N/A");
   reader.setClient("", String(payload));
-  Serial2.println("esto valio re quete verga");
+  DEBUG("esto valio re quete verga");
   remote_sell = redeem_beer = true;
 }
 
@@ -194,15 +206,15 @@ void onLineChange(const char * payload, size_t length) {
 }
 
 void validateResponse(const char * payload, size_t length){
-  Serial2.println(payload);
+  DEBUG(payload);
   JsonObject json_response = JsonObject();
   DynamicJsonDocument doc(1024);
   auto error = deserializeJson(doc, payload);
   // loading = false;
   screen.hideLoadingModal();
   if (error) {
-    Serial2.print(F("deserializeJson() failed with code "));
-    Serial2.println(error.c_str());
+    DEBUG("deserializeJson() failed with code ");
+    DEBUG(error.c_str());
   }
   json_response = doc.as<JsonObject>();
   if (json_response["confirmation"].as<String>().equals("success")) {
@@ -217,11 +229,10 @@ void validateClient(const char * payload, size_t length){
   JsonObject json_response = JsonObject();
   DynamicJsonDocument doc(1024);
   auto error = deserializeJson(doc, payload);
-  // loading = false;
   screen.hideLoadingModal();
   if (error) {
-    Serial2.print(F("deserializeJson() failed with code "));
-    Serial2.println(error.c_str());
+    DEBUG("deserializeJson() failed with code ");
+    DEBUG(error.c_str());
   }
   json_response = doc.as<JsonObject>();
   if (json_response["confirmation"].as<String>().equals("success")) {
@@ -230,6 +241,70 @@ void validateClient(const char * payload, size_t length){
     const String clientId = userData["_id"].as<String>();
     reader.setClient(client, clientId);
   }
+}
+
+void requestDevice(const char * payload, size_t length){
+  if (screen.isServing){
+    api.rejectOrder();
+    return;
+  }
+
+  JsonObject json_response = JsonObject();
+  DynamicJsonDocument doc(1024);
+  auto error = deserializeJson(doc, payload);
+  // loading = false;
+  screen.hideLoadingModal();
+  if (error) {
+    DEBUG("deserializeJson() failed with code ");
+    DEBUG(error.c_str());
+  }
+
+  json_response = doc.as<JsonObject>();
+  const uint16_t volume_ml = json_response["volume"].as<uint16_t>();
+  const String user = json_response["userId"].as<String>();
+  const String concept = json_response["concept"].as<String>();
+
+  api.confirmOrder(user);
+  
+  line.setPoruingOrder(user, volume_ml, concept);  
+}
+
+void startPour(const char * payload, size_t length){
+  // decoding this json : const { volume } = msg;
+
+  if (screen.isServing){
+    /* Should return something like busy line or bla bla */
+    return;
+  }
+  
+  JsonObject json_response = JsonObject();
+  DynamicJsonDocument doc(1024);
+  auto error = deserializeJson(doc, payload);
+  // loading = false;
+  screen.hideLoadingModal();
+  if (error) {
+    DEBUG("deserializeJson() failed with code ");
+    DEBUG(error.c_str());
+  }
+  json_response = doc.as<JsonObject>();
+  const uint16_t volume_ml = json_response["volume"].as<uint16_t>();
+  const String user = json_response["userId"].as<String>();
+  const String concept = json_response["concept"].as<String>();
+
+  line.setPoruingOrder(user, volume_ml, concept);  
+  
+  // const bool finished = countQty("", volume_ml);
+  // if (finished) commitPurchase("GROWLER", "4");
+}
+
+void stopPour(const char * payload, size_t length){
+  if(!screen.isServing) {
+    /* Should return something like busy line or bla bla */
+    return;
+  }
+
+  screen.isServing = false;
+  // screen.servingScreen(false, 0, "");
 }
 
 //-------------------------------------->Async Funtions
@@ -245,7 +320,7 @@ void socketManager( void * pvParameters ){
 void SetConnectedScreen(bool retriable){
   // if retriable should should give 2 options, Retry or AP
   screen.AP(wifi.ap_name, retriable); 
-  Serial2.println(wifi.ap_name.c_str());
+  DEBUG(wifi.ap_name.c_str());
   if (retriable)  wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS, handleTouch);
   else            wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS); 
 }
@@ -259,12 +334,12 @@ void setUpWiFi(){
     else bootOptions();
   }
   else SetConnectedScreen();
-  Serial2.println("Salio");
+  DEBUG("Salio");
   vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
 
 void bootOptions(){
-  Serial2.println(line.getLineStatus());
+  // DEBUG(line.getLineStatus());
   screen.retryOrAP();
   while (screen.actualScreen == RETRY_AP_SCR && line.theresNoInfo()) handleTouch(); 
 }
@@ -281,6 +356,9 @@ void setUpSocketConnection(){
   api.on(VALIDATED_USER, validateResponse);
   api.on(DISCONNECTED_LINE, onDisconnectedLine);
   api.on(ADD_EMERGENCY_CARD, onNewEmergencyCard);
+  api.on(START_POUR, startPour);
+  api.on(STOP_POUR, stopPour);
+  api.on(REQUEST_DEVICE, requestDevice);
   
   api.connect(wifi.getIP().c_str());
   xTaskCreatePinnedToCore(socketManager, "Socket loop", 16384,  NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO SOCKETCOMM.H 
@@ -289,26 +367,28 @@ void setUpSocketConnection(){
 void filling(uint16_t pulses){
   pulse_counter = 0;
   uint8_t last_percent = 0;
+  const uint8_t incrementor = pulses /screen.ppm < 200 ? 5: 2;
   uint32_t time_out = millis() + SERVING_TIME_OUT;
   const uint8_t min_qty = (uint8_t)((100*screen.ppm*20)/pulses);
 
-  line.initPouringLog(reader.getWorkerId(), pulses);
+  // line.initPouringLog(reader.getWorkerId(), pulses);
 
   while ((pulse_counter < pulses) && screen.isServing && time_out > millis()) {
     if ((pulse_counter < screen.ppm * 20) || (last_percent > 69)) handleTouch();
     const uint8_t percent = (uint8_t)((100*pulse_counter)/pulses);
-    if (percent > last_percent ) {
-      line.savePouredPulses(pulse_counter);
+    if (percent >( last_percent + incrementor) ) {
+      // line.savePouredPulses(pulse_counter);
+      api.updateStatus(pulse_counter/screen.ppm, wifi.macAddress());
 
-      if      (percent == min_qty) screen.hideCancell(); //hide cancel
-      else if (percent == 70) screen.showReady(); // show listo
+      // if      (percent == min_qty) screen.hideCancell(); //hide cancel
+      if (percent == 70) screen.showReady(); // show listo
 
       last_percent = percent;
       time_out = millis() + SERVING_TIME_OUT;
       screen.servingScreen(false, percent, "");
     }
   }
-  line.closeLogFile();
+  // line.closeLogFile();
 
   selecting_opt = false;
   if (last_percent > 70 && !screen.isServing) screen.isServing = true;
@@ -336,12 +416,15 @@ uint16_t mermando(){
   return pulse_counter;
 }
 
-void commitPurchase( String concept, String qty){
+void commitPurchase( String concept, String qty, String user){
   if(!reader.isOnEmergency()){
     const String worker_id = reader.getWorkerId();
     const String client_id = reader.getClientId();
-    api.registerPurchase(client_id, worker_id, concept, qty, screen.kegId);
+
+    const String fixed_user = user.length() > 1 ? user : worker_id;
+    api.registerPurchase(client_id, fixed_user, concept, qty, screen.kegId);
   }
+  screen.isServing = false;
   reader.removeUser();
 }
 
@@ -423,7 +506,7 @@ void handleTouch(bool remote){
       otaUpdating();
     }
     else if (btn == Retry) {
-      Serial2.println("puto");
+      DEBUG("puto");
       ESP.restart();
     }
     else if ((btn == Back) || (btn == Descartar)) {
@@ -432,18 +515,18 @@ void handleTouch(bool remote){
     }
     else if (btn == Guardar) {
       const float new_ppm = pulse_counter/300.00;
-      Serial2.println("Guardando ppm: " + (String)new_ppm + "");
+      DEBUG(("Guardando ppm: " + (String)new_ppm + "").c_str());
       line.savePPM(new_ppm);
       screen.ppm = new_ppm;
       // screen.tft.fillScreen(TFT_BLACK);
       screen.LockScreen();
     }
     else if (btn == CONFIGURAR_WIFI) {
-      Serial2.println("CONFIGURAR_WIFI");
+      DEBUG("CONFIGURAR_WIFI");
       SetConnectedScreen(true);
     }
     else if (btn == BOOT_WITH_FILE) {
-      Serial2.println("BOOT_WITH_FILE");
+      DEBUG("BOOT_WITH_FILE");
       const char * line_data = line.getInfoFromSF().c_str();
       screen.setInfo(line_data);
     }
@@ -492,8 +575,8 @@ JsonObject decodeJson(const char * payload){
   DynamicJsonDocument doc (1024);
   auto error = deserializeJson(doc, payload);
   if (error) {
-    Serial2.print(F("deserializeJson() failed with code "));
-    Serial2.println(error.c_str());
+    DEBUG("deserializeJson() failed with code ");
+    DEBUG(error.c_str());
   }
   json_response = doc.as<JsonObject>();
   doc.clear();
@@ -503,4 +586,10 @@ JsonObject decodeJson(const char * payload){
 bool validateJsonResponse(JsonObject json_response){
   const char* confirmation = json_response["confirmation"];
   return strcmp(confirmation, "success") == 0;
+}
+
+void DEBUG(const char *message){
+  char buffer[100];
+  snprintf(buffer, sizeof(buffer), "[Main]: %s", message);
+  logger.println(buffer);
 }

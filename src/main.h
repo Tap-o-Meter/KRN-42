@@ -11,6 +11,7 @@
 #include "Reader.h"
 #include "Screen.h"
 #include <SPIFFS.h>
+#include "Logger.h"
 #include "secrets.h"
 #include <esp_wifi.h>
 #include "SocketComm.h"
@@ -32,9 +33,9 @@ void handleTouch(bool remote = false);
 void socketManager(void * pvParameters);                // THIS SHOULD BE MOVED TO SOCKETCOMM.H
 bool countQty(String screen_msg, uint16_t ml);          // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 void SetConnectedScreen(bool retriable = false);        
-void commitPurchase(String concept, String qty);
 JsonObject decodeJson(const char * payload);
 bool validateJsonResponse(JsonObject json_response);    // THIS SHOULD BE MOVED TO SOCKETCOMM.H
+void commitPurchase(String concept, String qty, String user = "");
 
 // API Handlers
 void event(const char * payload, size_t length);
@@ -48,5 +49,10 @@ void validateClient(const char * payload, size_t length);
 void validateResponse(const char * payload, size_t length);
 void onNewEmergencyCard(const char * payload, size_t length);
 void onDisconnectedLine(const char * payload, size_t length);
+void requestDevice(const char * payload, size_t length);
+
+//Logger
+void DEBUG(const char *message);
+// void ERROR(ErrorType error);
 
 #endif // MAIN_H

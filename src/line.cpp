@@ -1,4 +1,4 @@
-#include "Line.h"
+#include "line.h"
 
 bool Line::theresNoInfo(){
   return line_status == NO_INFO;
@@ -29,16 +29,11 @@ void Line::saveInfo(String data){
 }
 
 float Line::getPPMFromMemory(){
-  // float ppm = 0.0;
-  // EEPROM.begin(MEM_SPACE);
-  // ppm = EEPROM.readFloat(PPM_ADDRESS);
-  // const bool is_valid = !isnan(ppm);
-  // EEPROM.end();
-  // if (!is_valid) savePPM(DEFAULT_PPM);
-  // return is_valid ? ppm : DEFAULT_PPM; 
   preferences.begin("my-app", false);
   float ppm = preferences.getFloat("ppm", DEFAULT_PPM);
   preferences.end();
+
+  DEBUG(("PPM: " + String(ppm)).c_str());
   return ppm;
 }
 
@@ -48,7 +43,7 @@ String Line::getInfoFromSF(){
     if (f) {
       String stored_data;
       stored_data = f.readString();
-      // Serial2.print(stored_data);
+      // DEBUG(stored_data);
       f.close();
       setLineStatus(CONNECTED);
       return stored_data;
@@ -61,31 +56,19 @@ String Line::getInfoFromSF(){
 }
 
 void Line::savePPM( float ppm ){
-  Serial2.println(ppm);
-  // EEPROM.begin(MEM_SPACE);
-  // EEPROM.writeFloat(PPM_ADDRESS, ppm);
-  // EEPROM.commit();
-  // EEPROM.end();
+  DEBUG(("PPM: "+String(ppm)).c_str());
   preferences.begin("my-app", false);
   preferences.putFloat("ppm", ppm);
   preferences.end();
 }
 
 void Line::saveEmergencyCard(const char * emergency_card){
-  // EEPROM.begin(MEM_SPACE);
-  // EEPROM.writeString(EMERGENCY_CARD_ADDRESS, emergency_card);
-  // EEPROM.commit();
-  // EEPROM.end();
   preferences.begin("my-app", false);
   preferences.putString("emergency_card", emergency_card);
   preferences.end();
 }
 
 String Line::getEmergencyCardFromMemory(){
-  // EEPROM.begin(MEM_SPACE);
-  // const String emergency_card_id = EEPROM.readString(EMERGENCY_CARD_ADDRESS);
-  // EEPROM.end();
-  // return emergency_card_id;
   preferences.begin("my-app", false);
   const String emergency_card_id = preferences.getString("emergency_card", "");
   preferences.end();
@@ -145,4 +128,30 @@ void Line::closeLogFile(){
 
 void Line::deletePouringLog(){
   SPIFFS.remove("/fillingLog.txt");
+}
+
+void Line::setPoruingOrder(String user, uint16_t ml, String concept){
+  current_order.user = user;
+  current_order.ml = ml;
+  current_order.concept = concept;
+}
+
+void Line::removePouringOrder(){
+  current_order.user = "";
+  current_order.ml = 0;
+  current_order.concept = "";
+}
+
+bool Line::theresPendingOrder(){
+  return current_order.ml > 0;
+}
+
+PourOrder Line::getPouringOrder(){
+  return current_order;
+}
+
+void Line::DEBUG(const char *message){
+  char buffer[100];
+  snprintf(buffer, sizeof(buffer), "[Line]: %s", message);
+  logger.println(buffer);
 }

@@ -11,21 +11,21 @@ ESP8266WiFiMulti WiFiMulti;
 SocketIoClient webSocket;
 
 void event(const char * payload, size_t length) {
-  USE_SERIAL.printf("got message: %s\n", payload);
+  USE_Serial2.printf("got message: %s\n", payload);
 }
 
 void setup() {
-    USE_SERIAL.begin(115200);
+    USE_Serial2.begin(115200);
 
-    USE_SERIAL.setDebugOutput(true);
+    USE_Serial2.setDebugOutput(true);
 
-    USE_SERIAL.println();
-    USE_SERIAL.println();
-    USE_SERIAL.println();
+    USE_Serial2.println();
+    USE_Serial2.println();
+    USE_Serial2.println();
 
       for(uint8_t t = 4; t > 0; t--) {
-          USE_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
-          USE_SERIAL.flush();
+          USE_Serial2.printf("[SETUP] BOOT WAIT %d...\n", t);
+          USE_Serial2.flush();
           delay(1000);
       }
 

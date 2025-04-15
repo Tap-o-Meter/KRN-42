@@ -25,8 +25,8 @@
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println();
+  Serial2.begin(115200);
+  Serial2.println();
 
   //WiFiManager
   //Local intialization. Once its business is done, there is no need to keep it around
@@ -59,18 +59,18 @@ void setup() {
   //here  "AutoConnectAP" with password "password"
   //and goes into a blocking loop awaiting configuration
   if (!wifiManager.autoConnect("AutoConnectAP", "password")) {
-    Serial.println("failed to connect, we should reset as see if it connects");
+    Serial2.println("failed to connect, we should reset as see if it connects");
     delay(3000);
     ESP.reset();
     delay(5000);
   }
 
   //if you get here you have connected to the WiFi
-  Serial.println("connected...yeey :)");
+  Serial2.println("connected...yeey :)");
 
 
-  Serial.println("local ip");
-  Serial.println(WiFi.localIP());
+  Serial2.println("local ip");
+  Serial2.println(WiFi.localIP());
 }
 
 void loop() {

@@ -13,8 +13,8 @@
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println("\n Starting");
+  Serial2.begin(115200);
+  Serial2.println("\n Starting");
 
   pinMode(TRIGGER_PIN, INPUT);
 }
@@ -43,7 +43,7 @@ void loop() {
     //WiFi.mode(WIFI_STA);
     
     if (!wifiManager.startConfigPortal("OnDemandAP")) {
-      Serial.println("failed to connect and hit timeout");
+      Serial2.println("failed to connect and hit timeout");
       delay(3000);
       //reset and try again, or maybe put it to deep sleep
       ESP.reset();
@@ -51,7 +51,7 @@ void loop() {
     }
 
     //if you get here you have connected to the WiFi
-    Serial.println("connected...yeey :)");
+    Serial2.println("connected...yeey :)");
   }
 
 

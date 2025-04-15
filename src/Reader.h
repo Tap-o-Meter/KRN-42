@@ -2,12 +2,11 @@
 #define MY_READER_H
 #include <Arduino.h>
 #include <SPI.h>
+#include "Screen.h"
+#include "Logger.h"
 #include <MFRC522.h>
 #include <ArduinoJson.h>
-#include "Screen.h"
 #include <SocketIoClient.h>
-
-
 
 struct newWorker {
   String id; 
@@ -31,6 +30,9 @@ class Reader {
 
     MFRC522 mfrc522;
     bool emergency = false;
+    //Logger
+    void DEBUG(const char *message);
+    // void ERROR(ErrorType error);
   public:
     bool on();
     void init();
