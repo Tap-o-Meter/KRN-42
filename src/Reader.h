@@ -1,10 +1,8 @@
 #ifndef MY_READER_H
 #define MY_READER_H
 #include <Arduino.h>
-#include <SPI.h>
 #include "Screen.h"
 #include "Logger.h"
-#include <MFRC522.h>
 #include <ArduinoJson.h>
 #include <SocketIoClient.h>
 
@@ -28,7 +26,7 @@ class Reader {
     String workerId;
     String clientId;
 
-    MFRC522 mfrc522;
+    // MFRC522 mfrc522;
     bool emergency = false;
     //Logger
     void DEBUG(const char *message);

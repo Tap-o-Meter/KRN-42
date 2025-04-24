@@ -3,7 +3,6 @@
 #include <Arduino.h>
 #include "secrets.h"
 #include "SPIFFS.h"
-#include <EEPROM.h>
 #include "Logger.h"
 #include <Preferences.h>
 

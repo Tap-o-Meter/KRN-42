@@ -3,12 +3,12 @@
 #include <WiFiClient.h>
 
 Reader::Reader(byte SS_PIN, byte RST_PIN){
-  mfrc522 = MFRC522(SS_PIN, RST_PIN);
+  // mfrc522 = MFRC522(SS_PIN, RST_PIN);
 }
 
 void Reader::init() {
-  SPI.begin();      // Init SPI bus
-  mfrc522.PCD_Init();   // Init MFRC522
+  // SPI.begin();      // Init SPI bus
+  // mfrc522.PCD_Init();   // Init MFRC522
 }
 
 String Reader::getUser(){
@@ -61,14 +61,15 @@ void Reader::removeUser(){
 }
 
 String Reader::getCardString(){
-  String id;
-  for (byte i = 0; i < mfrc522.uid.size; i++) {
-    id+=mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ";
-    id+= String(mfrc522.uid.uidByte[i], HEX);
-  }
-  id.toUpperCase();
-  id.remove(0,1);
-  return id;
+  // String id;
+  // for (byte i = 0; i < mfrc522.uid.size; i++) {
+  //   id+=mfrc522.uid.uidByte[i] < 0x10 ? " 0" : " ";
+  //   id+= String(mfrc522.uid.uidByte[i], HEX);
+  // }
+  // id.toUpperCase();
+  // id.remove(0,1);
+  // return id;
+  return "00 00 00 00";
 }
 
 String Reader::getEmergencyCard(const char * payload){
@@ -79,15 +80,14 @@ String Reader::getEmergencyCard(const char * payload){
 }
 
 boolean Reader::on() {
-  if (  mfrc522.PICC_IsNewCardPresent()){
-    if ( mfrc522.PICC_ReadCardSerial()){
-      mfrc522.PICC_HaltA();
-      return true;
-    }
-  }
+  // if (  mfrc522.PICC_IsNewCardPresent()){
+  //   if ( mfrc522.PICC_ReadCardSerial()){
+  //     mfrc522.PICC_HaltA();
+  //     return true;
+  //   }
+  // }
   return false;
 }
-
 
 void Reader::DEBUG(const char *message){
   char buffer[100];

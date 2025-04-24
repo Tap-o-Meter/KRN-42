@@ -17,6 +17,7 @@
 #include "SocketComm.h"
 #include <ArduinoJson.h>
 #include <WiFiManager32.h>
+#include "freertos/portmacro.h"
 // Include other necessary headers (e.g., if you're using JsonObject, you might need to include the JSON library header)
 
 // Function prototypes
@@ -26,6 +27,7 @@ void otaUpdating();
 void flowCounter();                                     // THIS CAN BE MOVED TO LINE.H
 void lineUnlocked();                                    
 uint16_t mermando();                                    // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
+uint16_t safeReadCounter();
 void setUpSocketConnection();                           
 void filling(uint16_t pulses);                          // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 uint16_t countQty(bool calibrate);

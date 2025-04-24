@@ -1,14 +1,11 @@
 #ifndef MY_WIFI_H
 #define MY_WIFI_H
-#include "EEPROM.h"
 #include "Logger.h"
 #include <Arduino.h>
 #include <ESPmDNS.h>
 #include <WiFiMulti.h>
 #include <ArduinoOTA.h>
 #include <Preferences.h>
-// #include <WiFiUdp.h>
-// #include "secrets.h"
 
 #define RETRY_TIME 2000
 #define WIFI_RETRIES_ADD 65
