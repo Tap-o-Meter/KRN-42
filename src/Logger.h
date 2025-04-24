@@ -4,14 +4,11 @@
 #include "SD.h"
 #include <Arduino.h>
 #include <esp_wifi.h>
-#include <BluetoothSerial.h>
+// #include <BluetoothSerial.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLE2902.h>
 
-extern "C" {
-    #include "esp_bt_main.h"
-    #include "esp_bt_device.h"
-    #include "esp_gap_bt_api.h"
-  }
-// #include <esp_bt.h>
 
 //Defining messages of ERRORS
 #define ERR_NOT_SDCARD "No SD card found"
@@ -21,7 +18,7 @@ public:
     enum OutputType { HW_SERIAL, WEBSERIAL };
 
 private:
-    BluetoothSerial BTSerial;
+    // BluetoothSerial BTSerial;
     enum ErrorType { NOT_SDCARD, NUM_ERRORS };
     bool theresSD = false;
     const String errorMessages[NUM_ERRORS] = {ERR_NOT_SDCARD};
