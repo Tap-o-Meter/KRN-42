@@ -32,12 +32,9 @@ class Reader {
     void DEBUG(const char *message);
     // void ERROR(ErrorType error);
   public:
-    bool on();
-    void init();
     String getUser();
     void removeUser();
     bool theresUser();
-    Reader(byte,byte);
     String getClient();
     void setEmergency();
     bool theresClient();

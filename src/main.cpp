@@ -1,14 +1,13 @@
 #include "main.h"
 #include <esp_log.h>
 
-
 WIFI wifi;
 Line line;
 Screen screen;
 SocketIO api;
 
+Reader reader;
 WiFiManager32 wifiManager;
-Reader reader(SS_PIN, RST_PIN);
 portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
 
 int8_t remote_concept = NONE;
@@ -22,6 +21,11 @@ void setup() {
   // Serial2.begin(115200);
   // Serial2.setDebugOutput(false);
   // Serial2.setDebugOutput(true);
+  
+  // disableCore0WDT();
+	// disableCore1WDT();
+	// disableLoopWDT();
+	// esp_task_wdt_delete(NULL);
   SPIFFS.begin(true);
 
   pinMode(VALVE_PIN, OUTPUT);
@@ -32,7 +36,6 @@ void setup() {
   api.setConfigString(wifi.macAddress());
 
   setUpWiFi();                                                       
-  reader.init();
   screen.ppm = line.getPPMFromMemory();
 
   uint8_t no_tries = 0;
@@ -103,15 +106,6 @@ void loop() {
     }
 
     handleTouch();
-    if (reader.on()) {
-      if(line.compareEmergencyCard(reader.getCardString()) && !api.isConnected()) reader.setEmergency();
-      else {
-        api.fetchCardId(reader.getCardString());
-        // fetchCardId();
-        screen.LoadingModal();
-        if (!reader.theresUser()) screen.LockScreen();
-      }       
-    }
 
     if (remote_sell) handleTouch(true); 
 
@@ -127,7 +121,7 @@ void loop() {
 void lineUnlocked(){
   selecting_opt = true;
   while (selecting_opt) {
-    if (!reader.theresClient() && reader.on() && !reader.isOnEmergency()) {
+    if (!reader.theresClient() && !reader.isOnEmergency()) {
       api.fetchCardId(reader.getCardString(), true);
       // fetchCardId(true);
       screen.LoadingModal();

@@ -2,14 +2,6 @@
 #include <SocketIoClient.h>
 #include <WiFiClient.h>
 
-Reader::Reader(byte SS_PIN, byte RST_PIN){
-  // mfrc522 = MFRC522(SS_PIN, RST_PIN);
-}
-
-void Reader::init() {
-  // SPI.begin();      // Init SPI bus
-  // mfrc522.PCD_Init();   // Init MFRC522
-}
 
 String Reader::getUser(){
   return user;
@@ -77,16 +69,6 @@ String Reader::getEmergencyCard(const char * payload){
   deserializeJson(doc, payload);
   JsonObject obj = doc.as<JsonObject>();
   return(obj["data"].as<String>());
-}
-
-boolean Reader::on() {
-  // if (  mfrc522.PICC_IsNewCardPresent()){
-  //   if ( mfrc522.PICC_ReadCardSerial()){
-  //     mfrc522.PICC_HaltA();
-  //     return true;
-  //   }
-  // }
-  return false;
 }
 
 void Reader::DEBUG(const char *message){
