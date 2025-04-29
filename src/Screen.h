@@ -26,6 +26,7 @@ enum screens {
   GROWLER_QTY,
   OPEN_QTY,
   SERVING_SCR,
+  ENTER_CALIBRATION_SCR,
 };
 
 #define AFFECT_INDEX      9
@@ -56,6 +57,7 @@ enum buttons {
   Retry,           
   CONFIGURAR_WIFI, 
   BOOT_WITH_FILE,  
+  ENTER_CALIBRATION_FACTOR
 };
 
 //ERORS
@@ -125,6 +127,7 @@ class Screen {
     void notConnectedToSever();
     void ServeOptionsGrowler();
     void setEmergency(bool state);
+    void enterCalibrationFactor(const std::function<void(float)>& cb);
     void setInfo(const char * info);
     void setTouchEneable(bool value);
     void drawMl(double ml, bool isMl);
@@ -135,12 +138,26 @@ class Screen {
     void AP(String name, bool retriable = false);
     void SelectQty(String user, String client = "" );
     void servingScreen( bool drawIt, uint8_t update, String type);
+    void enterInputMode(const std::function<void(float)>& cb) {
+      _inInputMode   = true;
+      _inputCallback = cb;
+    }
+    void exitInputMode() {
+      _inInputMode   = false;
+      _inputCallback = nullptr;
+    }
+    bool isOnInputMode() const { return _inInputMode; }
+
   private:
     bool loading_modal = false;
     bool emergency_mode = false;
     bool touch_eneable = false;
+    bool _inInputMode = false;
     int8_t error = NO_ERROR;
+
     std::vector<int> entryOptions;
+    std::function<void(float)> _inputCallback;
+
     //Logger
     void DEBUG(const char *message);
     // void ERROR(ErrorType error);

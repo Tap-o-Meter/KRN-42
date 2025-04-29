@@ -14,7 +14,7 @@
             "name": "PIO Debug",
             "executable": "/Users/elw/Documents/PlatformIO/Projects/KAREN_NO_SCREEN/.pio/build/esp32doit-devkit-v1/firmware.elf",
             "projectEnvName": "esp32doit-devkit-v1",
-            "toolchainBinDir": "/Users/elw/.platformio/packages/toolchain-xtensa32/bin",
+            "toolchainBinDir": "/Users/elw/.platformio/packages/toolchain-xtensa-esp-elf/bin",
             "internalConsoleOptions": "openOnSessionStart",
             "preLaunchTask": {
                 "type": "PlatformIO",
@@ -27,7 +27,7 @@
             "name": "PIO Debug (skip Pre-Debug)",
             "executable": "/Users/elw/Documents/PlatformIO/Projects/KAREN_NO_SCREEN/.pio/build/esp32doit-devkit-v1/firmware.elf",
             "projectEnvName": "esp32doit-devkit-v1",
-            "toolchainBinDir": "/Users/elw/.platformio/packages/toolchain-xtensa32/bin",
+            "toolchainBinDir": "/Users/elw/.platformio/packages/toolchain-xtensa-esp-elf/bin",
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
@@ -36,7 +36,7 @@
             "name": "PIO Debug (without uploading)",
             "executable": "/Users/elw/Documents/PlatformIO/Projects/KAREN_NO_SCREEN/.pio/build/esp32doit-devkit-v1/firmware.elf",
             "projectEnvName": "esp32doit-devkit-v1",
-            "toolchainBinDir": "/Users/elw/.platformio/packages/toolchain-xtensa32/bin",
+            "toolchainBinDir": "/Users/elw/.platformio/packages/toolchain-xtensa-esp-elf/bin",
             "internalConsoleOptions": "openOnSessionStart",
             "loadMode": "manual"
         }

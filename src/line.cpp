@@ -130,16 +130,16 @@ void Line::deletePouringLog(){
   SPIFFS.remove("/fillingLog.txt");
 }
 
-void Line::setPoruingOrder(String user, uint16_t ml, String concept){
+void Line::setPoruingOrder(String user, uint16_t ml, String type){
   current_order.user = user;
   current_order.ml = ml;
-  current_order.concept = concept;
+  current_order.type = type;
 }
 
 void Line::removePouringOrder(){
   current_order.user = "";
   current_order.ml = 0;
-  current_order.concept = "";
+  current_order.type = "";
 }
 
 bool Line::theresPendingOrder(){

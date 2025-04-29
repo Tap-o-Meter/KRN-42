@@ -5,7 +5,7 @@ void SocketIO::loop(){
 }
 
 void SocketIO::connect(const char *ip){
-  webSocket.begin(ip, PORT);
+  webSocket.begin(ip, 3000);
 }
 
 void SocketIO::redeemBeer(String client_id, String keg_id){
@@ -24,8 +24,8 @@ void SocketIO::on(const char* event, std::function<void (const char * payload, s
   webSocket.on(event, func);
 }
 
-void SocketIO::registerPurchase(String client_id, String worker_id, String concept, String qty, String keg_id){
-  const String data = "{ \"workerId\":\"" + worker_id + "\", \"kegId\":\"" + keg_id + "\", \"concept\":\"" + concept + "\", \"qty\": \"" + qty;
+void SocketIO::registerPurchase(String client_id, String worker_id, String type, String qty, String keg_id){
+  const String data = "{ \"workerId\":\"" + worker_id + "\", \"kegId\":\"" + keg_id + "\", \"concept\":\"" + type + "\", \"qty\": \"" + qty;
   const String client = (client_id.length() > 0 ? "\", \"clientId\": \"" + client_id : "");
   // webSocket.emit(SALE_COMPLETE, (data + client + JSON_END).c_str());
   webSocket.emit(FINISHED_POUR, (data + client + JSON_END).c_str());

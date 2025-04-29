@@ -4,10 +4,7 @@
 #include "SD.h"
 #include <Arduino.h>
 #include <esp_wifi.h>
-// #include <BluetoothSerial.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLE2902.h>
+#include <MycilaWebSerial.h>
 
 
 //Defining messages of ERRORS
@@ -21,6 +18,7 @@ private:
     // BluetoothSerial BTSerial;
     enum ErrorType { NOT_SDCARD, NUM_ERRORS };
     bool theresSD = false;
+    String message;
     const String errorMessages[NUM_ERRORS] = {ERR_NOT_SDCARD};
 
 protected:
@@ -38,6 +36,9 @@ public:
     void printValue(const String &key, const String &value);
     bool available();
     long parseInt();
+    float parseFloat();
+    String readString();
+    void setMessage(const String &msg);
     
 };
 

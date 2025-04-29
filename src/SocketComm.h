@@ -59,7 +59,7 @@ class SocketIO {
     void fetchCardId(String card_id, bool client = false);
     void on(const char* event, std::function<void (const char * payload, size_t length)> func);
     // void finishedPour(String line_id, String worker_id, String keg_id, String qty, String concept);
-    void registerPurchase(String client_id, String worker_id, String concept, String qty, String keg_id);
+    void registerPurchase(String client_id, String worker_id, String type, String qty, String keg_id);
   private:
     SocketIoClient webSocket;
     String set_up = "";

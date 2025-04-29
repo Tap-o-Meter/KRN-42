@@ -21,7 +21,7 @@ struct pouringLog {
 struct PourOrder {
   String user;
   uint16_t ml;
-  String concept;
+  String type;
 };
 
 #define DEFAULT_PPM 2.0
@@ -49,7 +49,7 @@ class Line {
     bool compareEmergencyCard(String card_id);
     void saveEmergencyCard(const char * payload);
     void initPouringLog(String user, uint16_t pulses);
-    void setPoruingOrder(String user, uint16_t ml, String concept);
+    void setPoruingOrder(String user, uint16_t ml, String type);
     PourOrder getPouringOrder();
     void removePouringOrder();
     bool theresPendingOrder();

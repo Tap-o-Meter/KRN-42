@@ -64,22 +64,43 @@ void Screen::removeInfo(){
 }
 
 uint8_t Screen::isPressed(){
-  if (logger.available()) {
-    // reading incoming integer from serial port
-    const uint8_t index = logger.parseInt() -1;
-    if (index  >= entryOptions.size()) {
-      DEBUG((String(index)+": Invalid option").c_str());
+  if (!logger.available()) return NONE;
+
+  if (isOnInputMode()){
+    String line = logger.readString();
+    if (line == "esc") {
+      exitInputMode();
+      LockScreen();
       return NONE;
     }
-    
-    const int8_t option = entryOptions[index]; 
 
-    entryOptions.clear();
-    return option;
+    float value = line.toFloat();
+    if (value <= 0.0f) {
+      DEBUG("Valor inválido, inténtalo de nuevo:");
+      return NONE;
+    }
+
+    if (_inputCallback != nullptr) _inputCallback(value);
+    exitInputMode();
+
+    return NONE;
   }
+  
+  // reading incoming integer from serial port
+  const uint8_t index = logger.parseInt() -1;
+  if (index  >= entryOptions.size()) {
+    DEBUG((String(index)+": Invalid option").c_str());
+    return NONE;
+  }
+  
+  const int8_t option = entryOptions[index]; 
 
-  return NONE;
+  entryOptions.clear();
+  return option;
 }
+
+  
+
 
 void Screen::connecting(){
   actualScreen = CONNECTING_SCR;
@@ -229,9 +250,11 @@ void Screen::Settings(){
   entryOptions.push_back(Calibrar);
   entryOptions.push_back(Actualizar);
   entryOptions.push_back(Back);
+  entryOptions.push_back(ENTER_CALIBRATION_FACTOR);
   DEBUG("1.- Calibra");
   DEBUG("2.- Update OTA");
   DEBUG("3.- Back");
+  DEBUG("4.- Enter Calibration Factor");
 }
 
 void Screen::calibrationScreen(uint16_t ml){
@@ -246,7 +269,6 @@ void Screen::calibrationScreen(uint16_t ml){
     entryOptions.push_back(Listo);
   }
     DEBUG((String(ml,0)+" pul").c_str());
-
 }
 
 void Screen::saveCalibration(uint16_t pulses){
@@ -262,6 +284,12 @@ void Screen::saveCalibration(uint16_t pulses){
   DEBUG("2.- Guardar");
 }
 
+void Screen::enterCalibrationFactor(const std::function<void(float)>& cb){
+  actualScreen = ENTER_CALIBRATION_SCR;
+  entryOptions.clear();
+  DEBUG("Enter Calibration Factor o 'esc' para cancelar");
+  enterInputMode(cb);
+}
 
 void Screen::otaUpdateScreen(){
   actualScreen = OTA_UPDATE_SCR;

@@ -16,7 +16,7 @@
 #include <esp_wifi.h>
 #include "SocketComm.h"
 #include <ArduinoJson.h>
-#include <WiFiManager32.h>
+// #include <WiFiManager32.h>
 #include "freertos/portmacro.h"
 // Include other necessary headers (e.g., if you're using JsonObject, you might need to include the JSON library header)
 
@@ -37,7 +37,7 @@ bool countQty(String screen_msg, uint16_t ml);          // ALL THE LINE STUFF SH
 void SetConnectedScreen(bool retriable = false);        
 JsonObject decodeJson(const char * payload);
 bool validateJsonResponse(JsonObject json_response);    // THIS SHOULD BE MOVED TO SOCKETCOMM.H
-void commitPurchase(String concept, String qty, String user = "");
+void commitPurchase(String type, String qty, String user = "");
 
 // API Handlers
 void event(const char * payload, size_t length);

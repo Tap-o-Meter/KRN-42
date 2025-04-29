@@ -2,13 +2,13 @@
 
 Logger logger; 
 
-Logger::Logger() : currentOutput(HW_SERIAL) {} // Inicializa con SERIAL por defecto
+Logger::Logger() : currentOutput(WEBSERIAL) {} // Inicializa con SERIAL por defecto
 
 void Logger::init(unsigned long baudRate, uint16_t no_linea) {
     if (currentOutput == HW_SERIAL) {
-        Serial2.begin(baudRate);
-        Serial2.setDebugOutput(false);
-        Serial2.setDebugOutput(true);
+        Serial.begin(baudRate);
+        Serial.setDebugOutput(false);
+        Serial.setDebugOutput(true);
     } else {
         // BTSerial.begin("Tap-o-Meter_"+no_linea);
 
@@ -21,22 +21,32 @@ void Logger::init(unsigned long baudRate, uint16_t no_linea) {
     }
 }
 
+void Logger::setMessage(const String &msg) {
+    if (currentOutput == HW_SERIAL) {
+        // Serial.println(message);
+    } else {
+       message = msg;
+    }
+}
+
 void Logger::setOutput(OutputType output) {
     currentOutput = output;
 }
 
 void Logger::print(const String &message) {
     if (currentOutput == HW_SERIAL) {
-        Serial2.print(message);
+        Serial.print(message);
     } else {
+        WebSerial.print(message);
         // BTSerial.print(message);
     }
 }
 
 void Logger::println(const String &message) {
     if (currentOutput == HW_SERIAL) {
-        Serial2.println(message);
+        Serial.println(message);
     } else {
+        WebSerial.println(message);
         // BTSerial.println(message);
     }
 }
@@ -45,37 +55,65 @@ void Logger::printError(uint8_t errorType) {
     const String message = errorMessages[errorType];
     if (currentOutput == WEBSERIAL) {
         // BTSerial.println("[ERROR -> LOGGER]: " + message);
+        WebSerial.println("[ERROR -> LOGGER]: " + message);
     } 
-    Serial2.println("[ERROR -> LOGGER]: " + message);
+    Serial.println("[ERROR -> LOGGER]: " + message);
 }
 
 void Logger::printError(const String &message) {
     if (currentOutput == WEBSERIAL) {
+        WebSerial.println("[ERROR " + message);
         // BTSerial.println("[ERROR " + message);
     } 
-    Serial2.println("[ERROR " + message);
+    Serial.println("[ERROR " + message);
 }
 
 void Logger::printValue(const String &key, const String &value) {
     if (currentOutput == HW_SERIAL) {
-        Serial2.println(key + ": " + value);
+        Serial.println(key + ": " + value);
     } else {
+        WebSerial.println(key + ": " + value);
         // BTSerial.println(key + ": " + value);
     }
 }
 
 bool Logger::available(){
     if (currentOutput == HW_SERIAL) {
-        return Serial2.available();
+        return Serial.available();
     } else {
-        // BTSerial.available();
+        return message.length();
     }
 }
 
 long Logger::parseInt(){
     if (currentOutput == HW_SERIAL) {
-        return Serial2.parseInt();
+        return Serial.parseInt();
     } else {
-        // BTSerial.parseInt();
+        const long value = message.toInt();
+        message = "";
+        return value;
+    }
+}
+
+float Logger::parseFloat(){
+    if (currentOutput == HW_SERIAL) {
+        return Serial.parseFloat();
+    } else {
+        // Convierte la cadena completa a número de punto flotante
+        float v = message.toFloat();
+        message = "";
+        return v;
+    }
+}
+
+String Logger::readString(){
+    if (currentOutput == HW_SERIAL) {
+        // Lee hasta timeout o '\n'
+        return Serial.readString();
+    } else {
+        // Devuelve todo lo recibido por WebSerial
+        String s = message;
+        message = "";
+        return s;
     }
 }

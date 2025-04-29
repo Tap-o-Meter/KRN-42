@@ -1,5 +1,6 @@
 #include "main.h"
 #include <esp_log.h>
+#include <esp_mac.h>
 
 WIFI wifi;
 Line line;
@@ -7,25 +8,22 @@ Screen screen;
 SocketIO api;
 
 Reader reader;
-WiFiManager32 wifiManager;
+// WiFiManager32 wifiManager;
 portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
 
-int8_t remote_concept = NONE;
+int8_t remote_type = NONE;
 volatile uint16_t pulse_counter = 0;
 bool reset = false, selecting_opt = false, loading = false, redeem_beer = false, remote_sell;
 
 
 //-------------------------------------->Set UP
 void setup() {
+  // gpio_install_isr_service();
   logger.init();
   // Serial2.begin(115200);
   // Serial2.setDebugOutput(false);
   // Serial2.setDebugOutput(true);
-  
-  // disableCore0WDT();
-	// disableCore1WDT();
-	// disableLoopWDT();
-	// esp_task_wdt_delete(NULL);
+
   SPIFFS.begin(true);
 
   pinMode(VALVE_PIN, OUTPUT);
@@ -37,6 +35,8 @@ void setup() {
 
   setUpWiFi();                                                       
   screen.ppm = line.getPPMFromMemory();
+  
+  DEBUG(wifi.getIP().c_str());
 
   uint8_t no_tries = 0;
 
@@ -50,6 +50,8 @@ void setup() {
   if (no_tries > 4) bootOptions();
 
   pinMode(FLOWMETER_PIN, INPUT);
+
+
 }
 
 void loop() {
@@ -97,10 +99,10 @@ void loop() {
       const bool finished = countQty("", line.getPouringOrder().ml);
 
       const String user = line.getPouringOrder().user;
-      const String concept = line.getPouringOrder().concept;
+      const String type = line.getPouringOrder().type;
       const String pouredVolume = (String)(pulse_counter/(screen.ppm*1000));
 
-      commitPurchase(concept, pouredVolume, user);
+      commitPurchase(type, pouredVolume, user);
       line.removePouringOrder();
       screen.LockScreen();
     }
@@ -164,11 +166,11 @@ void onRemoteSell(const char * payload, size_t length) {
     JsonObject userData = json_response["data"].as<JsonObject>();
     const String user = (userData["nombre"].as<String>()+" "+userData["apellidos"].as<String>());
     const String workerId = userData["_id"].as<String>();
-    const uint8_t concept = json_response["concept"].as<int>();
+    const uint8_t type = json_response["type"].as<int>();
 
     reader.setUser(user, workerId);
     remote_sell = true;
-    remote_concept = concept;
+    remote_type = type;
   }
 }
 
@@ -258,11 +260,11 @@ void requestDevice(const char * payload, size_t length){
   json_response = doc.as<JsonObject>();
   const uint16_t volume_ml = json_response["volume"].as<uint16_t>();
   const String user = json_response["userId"].as<String>();
-  const String concept = json_response["concept"].as<String>();
+  const String type = json_response["type"].as<String>();
 
   api.confirmOrder(user);
   
-  line.setPoruingOrder(user, volume_ml, concept);  
+  line.setPoruingOrder(user, volume_ml, type);  
 }
 
 void startPour(const char * payload, size_t length){
@@ -285,9 +287,9 @@ void startPour(const char * payload, size_t length){
   json_response = doc.as<JsonObject>();
   const uint16_t volume_ml = json_response["volume"].as<uint16_t>();
   const String user = json_response["userId"].as<String>();
-  const String concept = json_response["concept"].as<String>();
+  const String type = json_response["type"].as<String>();
 
-  line.setPoruingOrder(user, volume_ml, concept);  
+  line.setPoruingOrder(user, volume_ml, type);  
   
   // const bool finished = countQty("", volume_ml);
   // if (finished) commitPurchase("GROWLER", "4");
@@ -317,8 +319,9 @@ void SetConnectedScreen(bool retriable){
   // if retriable should should give 2 options, Retry or AP
   screen.AP(wifi.ap_name, retriable); 
   DEBUG(wifi.ap_name.c_str());
-  if (retriable)  wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS, handleTouch);
-  else            wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS); 
+  wifi.eneableAP();
+  // if (retriable)  wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS, handleTouch);
+  // else            wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS); 
 }
 
 //-------------------------------------->Helper Funtions
@@ -358,6 +361,11 @@ void setUpSocketConnection(){
   
   api.connect(wifi.getIP().c_str());
   xTaskCreatePinnedToCore(socketManager, "Socket loop", 16384,  NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO SOCKETCOMM.H 
+
+  // disableCore0WDT();
+	disableCore1WDT();
+	disableLoopWDT();
+	// esp_task_wdt_delete(NULL);
 }
 
 void filling(uint16_t pulses) {
@@ -428,24 +436,24 @@ uint16_t mermando(){
   return pulse_counter;
 }
 
-void commitPurchase( String concept, String qty, String user){
+void commitPurchase( String type, String qty, String user){
   if(!reader.isOnEmergency()){
     const String worker_id = reader.getWorkerId();
     const String client_id = reader.getClientId();
 
     const String fixed_user = user.length() > 1 ? user : worker_id;
-    api.registerPurchase(client_id, fixed_user, concept, qty, screen.kegId);
+    api.registerPurchase(client_id, fixed_user, type, qty, screen.kegId);
   }
   screen.isServing = false;
   reader.removeUser();
 }
 
 void handleTouch(bool remote){
-  const int8_t btn = remote ? remote_concept : screen.isPressed();
+  const int8_t btn = remote ? remote_type : screen.isPressed();
   if (remote) {
     reset = true;
     remote_sell = false;
-    remote_concept = NON_SELECTED;
+    remote_type = NON_SELECTED;
   }
   if (btn != NON_SELECTED){
     if      (btn == Vaso) {
@@ -541,6 +549,15 @@ void handleTouch(bool remote){
       DEBUG("BOOT_WITH_FILE");
       const char * line_data = line.getInfoFromSF().c_str();
       screen.setInfo(line_data);
+    }
+    else if (btn == ENTER_CALIBRATION_FACTOR) {
+      screen.enterCalibrationFactor([&](float value) {
+        line.savePPM(value);
+        screen.ppm = value;
+        DEBUG(("Factor guardado: " + String(value,3)).c_str());
+        // vuelves al menú
+        screen.LockScreen();
+      });
     }
   } 
   else if(redeem_beer){
