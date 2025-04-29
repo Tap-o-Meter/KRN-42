@@ -99,8 +99,6 @@ class Screen {
     bool isCalibrating = false;
     char keyLabel[4][8] = {"Vaso", "Taster", "Growler", "Mermar"};
 
-    Screen();
-    void init();
     // void splash();
     void noWifi();
     void tapCard();

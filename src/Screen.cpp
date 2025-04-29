@@ -2,13 +2,6 @@
 // #include <JPEGDecoder.h>
 
 
-Screen::Screen(){
-
-}
-void Screen::init(){
-
-}
-
 bool Screen::isTouchEneable(){
   return touch_eneable;
 }
@@ -249,17 +242,16 @@ void Screen::Settings(){
   DEBUG("Habemus configuracion, Selecciona:");
   entryOptions.push_back(Calibrar);
   entryOptions.push_back(Actualizar);
-  entryOptions.push_back(Back);
   entryOptions.push_back(ENTER_CALIBRATION_FACTOR);
+  entryOptions.push_back(Back);
   DEBUG("1.- Calibra");
   DEBUG("2.- Update OTA");
-  DEBUG("3.- Back");
-  DEBUG("4.- Enter Calibration Factor");
+  DEBUG("3.- Enter Calibration Factor");
+  DEBUG("4.- Back");
 }
 
 void Screen::calibrationScreen(uint16_t ml){
   actualScreen = CALIBRATE_SCR;
-  // currentScreen = "CAL_SCR";
   if (ml == 0) {
     isCalibrating = true;
     entryOptions.clear();

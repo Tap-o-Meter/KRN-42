@@ -55,7 +55,7 @@ void SocketIO::fetchCardId(String card_id, bool client){
 
 void SocketIO::updateStatus(uint16_t ml, String line_id){
   // webSocket.emit(UPDATE_STATUS, "{\"pouredVolume\": " + (String)pulse_counter + ", \"lineId\": \"" + line_id + JSON_END);
-  esp_task_wdt_reset();
+  // esp_task_wdt_reset();
   webSocket.emit(UPDATE_STATUS, ("{\"pouredVolume\": " + (String)ml + ", \"lineId\": \"" + line_id + JSON_END).c_str());
 }
 

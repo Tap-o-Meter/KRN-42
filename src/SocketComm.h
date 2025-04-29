@@ -4,7 +4,7 @@
 #include "Logger.h"
 #include "secrets.h"
 #include <ArduinoJson.h>
-#include <esp_task_wdt.h>
+// #include <esp_task_wdt.h>
 #include <SocketIoClient.h>
 
 
@@ -53,9 +53,7 @@ class SocketIO {
     void connect(const char * ip);
     void updateStatus(uint16_t ml, String line_id);
     void setConfigString(String line_id);
-    JsonObject decodeJson(const char * payload);
     void redeemBeer(String client_id, String keg_id);
-    bool validateJsonResponse(JsonObject json_response);
     void fetchCardId(String card_id, bool client = false);
     void on(const char* event, std::function<void (const char * payload, size_t length)> func);
     // void finishedPour(String line_id, String worker_id, String keg_id, String qty, String concept);

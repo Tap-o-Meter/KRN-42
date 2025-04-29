@@ -8,7 +8,6 @@ Screen screen;
 SocketIO api;
 
 Reader reader;
-// WiFiManager32 wifiManager;
 portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
 
 int8_t remote_type = NONE;
@@ -50,8 +49,6 @@ void setup() {
   if (no_tries > 4) bootOptions();
 
   pinMode(FLOWMETER_PIN, INPUT);
-
-
 }
 
 void loop() {
