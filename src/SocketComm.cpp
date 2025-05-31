@@ -5,7 +5,7 @@ void SocketIO::loop(){
 }
 
 void SocketIO::connect(const char *ip){
-  webSocket.begin(ip, 3000);
+  webSocket.begin(ip, PORT);
 }
 
 void SocketIO::redeemBeer(String client_id, String keg_id){
@@ -29,7 +29,7 @@ void SocketIO::registerPurchase(String client_id, String worker_id, String type,
   const String client = (client_id.length() > 0 ? "\", \"clientId\": \"" + client_id : "");
   // webSocket.emit(SALE_COMPLETE, (data + client + JSON_END).c_str());
   webSocket.emit(FINISHED_POUR, (data + client + JSON_END).c_str());
-
+  DEBUG((data + client + JSON_END).c_str());
 }
 
 void SocketIO::rejectOrder(){
@@ -43,6 +43,7 @@ void SocketIO::confirmOrder(String user){
 
 void SocketIO::setConfigString(String line_id){
   set_up = "{ \"id\": \"" + line_id + JSON_END;
+  DEBUG(set_up.c_str());
 }
 
 String SocketIO::getConfigString(){
@@ -79,7 +80,7 @@ void SocketIO::updateStatus(uint16_t ml, String line_id){
 // }
 
 void SocketIO::DEBUG(const char *message){
-  char buffer[100];
+  char buffer[250];
   snprintf(buffer, sizeof(buffer), "[SocketIO]: %s", message);
   logger.println(buffer);
 }

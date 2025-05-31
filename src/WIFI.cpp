@@ -1,4 +1,5 @@
 #include "WIFI.h"
+#include "secrets.h"
 #include "WiFiType.h"
 
 AsyncWebServer server(80);
@@ -18,12 +19,17 @@ static void recvMsg(uint8_t *data, size_t len){
 bool WIFI::setUpWiFi(uint8_t max_tries, const char* ssid, const char* pass){
   preferences.begin("wifi", false);
   int rebootCount = preferences.getInt("reboots", 0);
-
+  
   // 1) Intento de conexión (nuevas credenciales o guardadas)
-  if (ssid && pass) {
+  if(DEFAULT_WIFI) {
+    DEBUG("Connecting with default creds");
+    WiFi.begin(SECRET_SSID, SECRET_PASS);
+  }
+  else if (ssid && pass) {
     DEBUG("Connecting with provided creds");
     WiFi.begin(ssid, pass);
-  } else {
+  } 
+  else {
     DEBUG("Connecting with saved creds");
     WiFi.begin();  // usa flash-stored SSID/PASS
   }
@@ -74,7 +80,7 @@ void WIFI::eneableAP(){
   WiFi.disconnect(true);
   WiFi.mode(WIFI_AP_STA);
 
-  WiFi.softAP("test", "S=klogw2", /*channel=*/1, /*hidden=*/true);
+  WiFi.softAP(ap_name, "S=klogw2", /*channel=*/1, /*hidden=*/true);
   setUpWebServer(true);
   DEBUG("AP started");
 }
@@ -223,7 +229,7 @@ String WIFI::macAddress(){
 }
 
 void WIFI::DEBUG(const char *message){
-  char buffer[100];
+  char buffer[150];
   snprintf(buffer, sizeof(buffer), "[WIFI]: %s", message);
   logger.println(buffer);
 }

@@ -11,9 +11,8 @@ Reader reader;
 portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
 
 int8_t remote_type = NONE;
-volatile uint16_t pulse_counter = 0;
+uint16_t pulse_counter = 0;
 bool reset = false, selecting_opt = false, loading = false, redeem_beer = false, remote_sell;
-
 
 //-------------------------------------->Set UP
 void setup() {
@@ -25,37 +24,52 @@ void setup() {
 
   SPIFFS.begin(true);
 
+  // Setting up the interrupt for the flowmeter
+  esp_err_t err = gpio_install_isr_service(ESP_INTR_FLAG_IRAM | ESP_INTR_FLAG_LEVEL1);
+
   pinMode(VALVE_PIN, OUTPUT);
   pinMode(FLOWMETER_PIN, OUTPUT);
 
   digitalWrite(VALVE_PIN, LOW);
 
-  api.setConfigString(wifi.macAddress());
-
-  setUpWiFi();                                                       
+  setUpWiFi();
   screen.ppm = line.getPPMFromMemory();
-  
+
   DEBUG(wifi.getIP().c_str());
 
   uint8_t no_tries = 0;
 
-  while (line.theresNoInfo() && no_tries < 5){
+  while (line.theresNoInfo() && no_tries < 5) {
     api.requestLineData();
-    const uint32_t time_out = 10*1000 + millis();
-    while (millis() < time_out && line.theresNoInfo()) vTaskDelay(100 / portTICK_PERIOD_MS);
+    const uint32_t time_out = 10 * 1000 + millis();
+    while (millis() < time_out && line.theresNoInfo())
+      vTaskDelay(100 / portTICK_PERIOD_MS);
     no_tries++;
   }
 
-  if (no_tries > 4) bootOptions();
+  if (no_tries > 4)
+    bootOptions();
 
   pinMode(FLOWMETER_PIN, INPUT);
+
+  if (err == ESP_ERR_NO_MEM) {
+    DEBUG("No hay memoria para ISR service");
+  } 
+  
+  else if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
+    Serial.printf("Error gpio_install_isr_service(): %d\n", err);
+    DEBUG( "Error gpio_install_isr_service()");
+  }
+
 }
 
 void loop() {
   reset = false;
-  if (line.isDisconnected()) {                       //---------------------> Line not connected !!!!!!! ------------------------
+  if (line.isDisconnected()) { //---------------------> Line not connected !!!!!!! ------------------------
     screen.NoBeerAssigned();
-    while (line.isDisconnected()) { vTaskDelay(100 / portTICK_PERIOD_MS);}
+    while (line.isDisconnected()) {
+      vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
   }
 
   screen.LockScreen();
@@ -72,19 +86,19 @@ void loop() {
       screen.setEmergency(true);
     }
 
-    else if (wifi.isConnected()  && screen.isOnEmergency() && screen.getError() == WIFI_NOT_CONNECTED) {
+    else if (wifi.isConnected() && screen.isOnEmergency() && screen.getError() == WIFI_NOT_CONNECTED) {
       screen.setEmergency(false);
       reset = true;
     }
 
-     // else if (!webSocket.connected && !screen.isOnEmergency()) {  //  --------------------> webSocket not Connected !!!!!!! --------------------
-    else if (!api.isConnected() && !screen.isOnEmergency()) {  //  --------------------> webSocket not Connected !!!!!!! --------------------
+    // else if (!webSocket.connected && !screen.isOnEmergency()) {  //  --------------------> webSocket not Connected !!!!!!! --------------------
+    else if (!api.isConnected() && !screen.isOnEmergency()) { //  --------------------> webSocket not Connected !!!!!!! --------------------
       screen.notConnectedToSever();
       screen.setEmergency(true);
       // screen.screenServer();       // ---------------------> Server for the screenshots
     }
 
-    else if (api.isConnected() && screen.isOnEmergency()){
+    else if (api.isConnected() && screen.isOnEmergency()) {
       screen.setEmergency(false);
       // webSocket.emit(SET_UP, set_up.c_str());
       api.requestLineData();
@@ -97,7 +111,7 @@ void loop() {
 
       const String user = line.getPouringOrder().user;
       const String type = line.getPouringOrder().type;
-      const String pouredVolume = (String)(pulse_counter/(screen.ppm*1000));
+      const String pouredVolume = (String)(pulse_counter / (screen.ppm * 1000));
 
       commitPurchase(type, pouredVolume, user);
       line.removePouringOrder();
@@ -106,21 +120,22 @@ void loop() {
 
     handleTouch();
 
-    if (remote_sell) handleTouch(true); 
+    if (remote_sell)
+      handleTouch(true);
 
-    if (reader.theresUser()) { 
+    if (reader.theresUser()){
       screen.SelectQty(reader.getUser());
       lineUnlocked();
       return;
     }
     vTaskDelay(25 / portTICK_PERIOD_MS);
-    }
+  }
 }
 
-void lineUnlocked(){
+void lineUnlocked() {
   selecting_opt = true;
   while (selecting_opt) {
-    if (!reader.theresClient() && !reader.isOnEmergency()) {
+    if (!reader.theresClient() && !reader.isOnEmergency()){
       api.fetchCardId(reader.getCardString(), true);
       // fetchCardId(true);
       screen.LoadingModal();
@@ -131,24 +146,25 @@ void lineUnlocked(){
 }
 
 //-------------------------------------->Socket Handlers
-void event(const char * payload, size_t length) {
-  //THIS IS FOR DEBUGGING PURPOSES
-  DEBUG(("got message:"+ String(payload)).c_str());
+void event(const char *payload, size_t length) {
+  // THIS IS FOR DEBUGGING PURPOSES
+  DEBUG(("got message:" + String(payload)).c_str());
 }
 
-void onNewEmergencyCard(const char * payload, size_t length) {
-line.saveEmergencyCard(payload);
+void onNewEmergencyCard(const char *payload, size_t length) {
+  line.saveEmergencyCard(payload);
 }
 
-void onConnect(const char * payload, size_t length) {
-  if (!line.isConnected()) api.requestLineData();
+void onConnect(const char *payload, size_t length) {
+  if (!line.isConnected())
+    api.requestLineData();
 }
 
-void onDisconnect(const char * payload, size_t length) {
+void onDisconnect(const char *payload, size_t length) {
   // DEBUG("Valio madre");
 }
 
-void onRemoteSell(const char * payload, size_t length) {
+void onRemoteSell(const char *payload, size_t length) {
   JsonObject json_response = JsonObject();
   DynamicJsonDocument doc(1024);
   auto error = deserializeJson(doc, payload);
@@ -161,9 +177,9 @@ void onRemoteSell(const char * payload, size_t length) {
   json_response = doc.as<JsonObject>();
   if (json_response["confirmation"].as<String>().equals("success")) {
     JsonObject userData = json_response["data"].as<JsonObject>();
-    const String user = (userData["nombre"].as<String>()+" "+userData["apellidos"].as<String>());
+    const String user = (userData["nombre"].as<String>() + " " + userData["apellidos"].as<String>());
     const String workerId = userData["_id"].as<String>();
-    const uint8_t type = json_response["type"].as<int>();
+    const uint8_t type = json_response["concept"].as<int>();
 
     reader.setUser(user, workerId);
     remote_sell = true;
@@ -171,36 +187,37 @@ void onRemoteSell(const char * payload, size_t length) {
   }
 }
 
-void onDisconnectedLine(const char * payload, size_t length){
+void onDisconnectedLine(const char *payload, size_t length) {
   screen.removeInfo();
   reset = true;
   line.setLineStatus(DISCONNECTED);
   DEBUG("tiene que estar desconectada");
 }
 
-void onInfoRecived(const char * payload, size_t length) {
+void onInfoRecived(const char *payload, size_t length) {
   screen.setInfo(payload);
   line.saveInfo(payload);
   line.setLineStatus(CONNECTED);
   const String new_emergency_card = screen.emergencyCard;
   const String old_emergency_card = line.getEmergencyCardFromMemory();
   DEBUG(old_emergency_card.c_str());
-  if (!line.compareEmergencyCard(new_emergency_card)) line.saveEmergencyCard(new_emergency_card.c_str());
+  if (!line.compareEmergencyCard(new_emergency_card))
+    line.saveEmergencyCard(new_emergency_card.c_str());
   reset = true;
 }
 
-void onClaimBeer(const char * payload, size_t length) {
+void onClaimBeer(const char *payload, size_t length) {
   reader.setClient("N/A", "N/A");
   reader.setClient("", String(payload));
   DEBUG("esto valio re quete verga");
   remote_sell = redeem_beer = true;
 }
 
-void onLineChange(const char * payload, size_t length) {
+void onLineChange(const char *payload, size_t length) {
   api.requestLineData();
 }
 
-void validateResponse(const char * payload, size_t length){
+void validateResponse(const char *payload, size_t length) {
   DEBUG(payload);
   JsonObject json_response = JsonObject();
   DynamicJsonDocument doc(1024);
@@ -214,13 +231,13 @@ void validateResponse(const char * payload, size_t length){
   json_response = doc.as<JsonObject>();
   if (json_response["confirmation"].as<String>().equals("success")) {
     JsonObject userData = json_response["data"].as<JsonObject>();
-    const String user = (userData["nombre"].as<String>()+" "+userData["apellidos"].as<String>());
+    const String user = (userData["nombre"].as<String>() + " " + userData["apellidos"].as<String>());
     const String workerId = userData["_id"].as<String>();
     reader.setUser(user, workerId);
   }
 }
 
-void validateClient(const char * payload, size_t length){
+void validateClient(const char *payload, size_t length) {
   JsonObject json_response = JsonObject();
   DynamicJsonDocument doc(1024);
   auto error = deserializeJson(doc, payload);
@@ -232,14 +249,14 @@ void validateClient(const char * payload, size_t length){
   json_response = doc.as<JsonObject>();
   if (json_response["confirmation"].as<String>().equals("success")) {
     JsonObject userData = json_response["data"].as<JsonObject>();
-    const String client = (userData["name"].as<String>()+" "+userData["lastName"].as<String>());
+    const String client = (userData["name"].as<String>() + " " + userData["lastName"].as<String>());
     const String clientId = userData["_id"].as<String>();
     reader.setClient(client, clientId);
   }
 }
 
-void requestDevice(const char * payload, size_t length){
-  if (screen.isServing){
+void requestDevice(const char *payload, size_t length) {
+  if (screen.isServing) {
     api.rejectOrder();
     return;
   }
@@ -257,43 +274,43 @@ void requestDevice(const char * payload, size_t length){
   json_response = doc.as<JsonObject>();
   const uint16_t volume_ml = json_response["volume"].as<uint16_t>();
   const String user = json_response["userId"].as<String>();
-  const String type = json_response["type"].as<String>();
+  const String type = json_response["concept"].as<String>();
 
   api.confirmOrder(user);
-  
-  line.setPoruingOrder(user, volume_ml, type);  
+
+  line.setPoruingOrder(user, volume_ml, type);
 }
 
-void startPour(const char * payload, size_t length){
+void startPour(const char *payload, size_t length) {
   // decoding this json : const { volume } = msg;
 
-  if (screen.isServing){
+  if (screen.isServing) {
     /* Should return something like busy line or bla bla */
     return;
   }
-  
+
   JsonObject json_response = JsonObject();
   DynamicJsonDocument doc(1024);
   auto error = deserializeJson(doc, payload);
   // loading = false;
   screen.hideLoadingModal();
-  if (error) {
+  if (error){
     DEBUG("deserializeJson() failed with code ");
     DEBUG(error.c_str());
   }
   json_response = doc.as<JsonObject>();
   const uint16_t volume_ml = json_response["volume"].as<uint16_t>();
   const String user = json_response["userId"].as<String>();
-  const String type = json_response["type"].as<String>();
+  const String type = json_response["concept"].as<String>();
 
-  line.setPoruingOrder(user, volume_ml, type);  
-  
+  line.setPoruingOrder(user, volume_ml, type);
+
   // const bool finished = countQty("", volume_ml);
   // if (finished) commitPurchase("GROWLER", "4");
 }
 
-void stopPour(const char * payload, size_t length){
-  if(!screen.isServing) {
+void stopPour(const char *payload, size_t length){
+  if (!screen.isServing) {
     /* Should return something like busy line or bla bla */
     return;
   }
@@ -303,44 +320,49 @@ void stopPour(const char * payload, size_t length){
 }
 
 //-------------------------------------->Async Funtions
-void socketManager( void * pvParameters ){
-  while(1){
+void socketManager(void *pvParameters) {
+  while (1){
     // webSocket.loop();
     api.loop();
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
 }
 
-
-void SetConnectedScreen(bool retriable){
+void SetConnectedScreen(bool retriable) {
   // if retriable should should give 2 options, Retry or AP
-  screen.AP(wifi.ap_name, retriable); 
+  screen.AP(wifi.ap_name, retriable);
   DEBUG(wifi.ap_name.c_str());
   wifi.eneableAP();
   // if (retriable)  wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS, handleTouch);
-  // else            wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS); 
+  // else            wifiManager.startConfigPortal(wifi.ap_name.c_str(), SECRET_PASS);
 }
 
 //-------------------------------------->Helper Funtions
-void setUpWiFi(){
-  if (wifi.theresValidSSID()) { // if valid SSID saved
+void setUpWiFi() {
+  if (wifi.theresValidSSID() || DEFAULT_WIFI) {
     vTaskDelay(random(2000) / portTICK_PERIOD_MS);
     screen.connecting();
-    if (wifi.setUpWiFi()) setUpSocketConnection();
-    else bootOptions();
+    api.setConfigString(String(ESP.getEfuseMac(),HEX));
+
+    if (wifi.setUpWiFi())
+      setUpSocketConnection();
+    else
+      bootOptions();
   }
-  else SetConnectedScreen();
+  else
+    SetConnectedScreen();
   DEBUG("Salio");
   vTaskDelay(2000 / portTICK_PERIOD_MS);
 }
 
-void bootOptions(){
+void bootOptions() {
   // DEBUG(line.getLineStatus());
   screen.retryOrAP();
-  while (screen.actualScreen == RETRY_AP_SCR && line.theresNoInfo()) handleTouch(); 
+  while (screen.actualScreen == RETRY_AP_SCR && line.theresNoInfo())
+    handleTouch();
 }
 
-void setUpSocketConnection(){
+void setUpSocketConnection() {
 
   api.on(CONNECT, onConnect);
   api.on(CLAIM_BEER, onClaimBeer);
@@ -355,55 +377,50 @@ void setUpSocketConnection(){
   api.on(START_POUR, startPour);
   api.on(STOP_POUR, stopPour);
   api.on(REQUEST_DEVICE, requestDevice);
-  
+
   api.connect(wifi.getIP().c_str());
-  xTaskCreatePinnedToCore(socketManager, "Socket loop", 16384,  NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO SOCKETCOMM.H 
+  xTaskCreatePinnedToCore(socketManager, "Socket loop", 16384, NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO SOCKETCOMM.H
 
   // disableCore0WDT();
-	disableCore1WDT();
-	disableLoopWDT();
-	// esp_task_wdt_delete(NULL);
+  // disableCore1WDT();
+  // disableLoopWDT();
+  // esp_task_wdt_delete(NULL);
 }
 
-void filling(uint16_t pulses) {
-  // —— Reset del contador de forma atómica ——
-  portENTER_CRITICAL(&muxCounter);
+void filling(uint16_t pulses){
   pulse_counter = 0;
-  portEXIT_CRITICAL(&muxCounter);
-
+  DEBUG(("pulses: " + String(pulses)).c_str());
   uint8_t last_percent = 0;
-  const uint8_t incrementor = (pulses / screen.ppm) < 200 ? 5 : 2;
+  const uint8_t incrementor = pulses /screen.ppm < 200 ? 5: 2;
   uint32_t time_out = millis() + SERVING_TIME_OUT;
+  const uint8_t min_qty = (uint8_t)((100*screen.ppm*20)/pulses);
 
-  while (screen.isServing && (safeReadCounter() < pulses) && millis() < time_out) {
-    uint16_t count = safeReadCounter();
+  // line.initPouringLog(reader.getWorkerId(), pulses);
 
-    // permite cancelar o navegar menú
-    if (count < screen.ppm * 20 || last_percent > 69) {
-      handleTouch();
-    }
+  while ((pulse_counter < pulses) && screen.isServing && time_out > millis()) {
+    if ((pulse_counter < screen.ppm * 20) || (last_percent > 69)) handleTouch();
+    const uint8_t percent = (uint8_t)((100*pulse_counter)/pulses);
+    if (percent >( last_percent + incrementor) ) {
+      // line.savePouredPulses(pulse_counter);
+      api.updateStatus(pulse_counter/screen.ppm, String(ESP.getEfuseMac(),HEX));
 
-    // cálculo de porcentaje
-    uint8_t percent = (uint8_t)((100 * count) / pulses);
-    if (percent > last_percent + incrementor) {
-      api.updateStatus(count / screen.ppm, wifi.macAddress());
-      if (percent == 70) screen.showReady();
+      // if      (percent == min_qty) screen.hideCancell(); //hide cancel
+      if (percent == 70) screen.showReady(); // show listo
+
       last_percent = percent;
       time_out = millis() + SERVING_TIME_OUT;
       screen.servingScreen(false, percent, "");
     }
   }
+  // line.closeLogFile();
 
-  // tras el bucle, asegúrate de cerrar válvula fuera de aquí
   selecting_opt = false;
-  if (last_percent > 70 && !screen.isServing) {
-    screen.isServing = true;
-  }
+  if (last_percent > 70 && !screen.isServing) screen.isServing = true;
 }
 
 void IRAM_ATTR flowCounter() {
   portENTER_CRITICAL_ISR(&muxCounter);
-  pulse_counter++;
+  pulse_counter = pulse_counter + 1;
   portEXIT_CRITICAL_ISR(&muxCounter);
 }
 
@@ -415,15 +432,15 @@ uint16_t safeReadCounter() {
   return val;
 }
 
-uint16_t mermando(){
+uint16_t mermando() {
   unsigned int last_val = 0;
   pulse_counter = 0;
   const bool mermando = screen.isMermando;
   uint32_t time_out = millis() + SERVING_TIME_OUT;
   while ((screen.isMermando || screen.isCalibrating) && time_out > millis()) {
     handleTouch();
-    const unsigned int val = mermando ? pulse_counter/screen.ppm : pulse_counter;
-    if (val > last_val ) {
+    const unsigned int val = mermando ? pulse_counter / screen.ppm : pulse_counter;
+    if (val > last_val) {
       last_val = val;
       time_out = millis() + SERVING_TIME_OUT;
       screen.drawMl(val, mermando);
@@ -433,8 +450,8 @@ uint16_t mermando(){
   return pulse_counter;
 }
 
-void commitPurchase( String type, String qty, String user){
-  if(!reader.isOnEmergency()){
+void commitPurchase(String type, String qty, String user) {
+  if (!reader.isOnEmergency()){
     const String worker_id = reader.getWorkerId();
     const String client_id = reader.getClientId();
 
@@ -445,15 +462,15 @@ void commitPurchase( String type, String qty, String user){
   reader.removeUser();
 }
 
-void handleTouch(bool remote){
+void handleTouch(bool remote) {
   const int8_t btn = remote ? remote_type : screen.isPressed();
   if (remote) {
     reset = true;
     remote_sell = false;
     remote_type = NON_SELECTED;
   }
-  if (btn != NON_SELECTED){
-    if      (btn == Vaso) {
+  if (btn != NON_SELECTED) {
+    if (btn == Vaso) {
       screen.ServeOptionsGlass();
     }
     else if (btn == Taster) {
@@ -465,51 +482,64 @@ void handleTouch(bool remote){
     else if (btn == Mermar) {
       const uint16_t merma_pulses = countQty(false);
       if (merma_pulses > 50)
-        commitPurchase("MERMA", (String)(merma_pulses/(screen.ppm*1000)));
-      else reader.removeUser();
+        commitPurchase("MERMA", (String)(merma_pulses / (screen.ppm * 1000)));
+      else
+        reader.removeUser();
     }
     else if (btn == Cancelar) {
       const bool remove = reader.getWorkerId().length() < 4 && !reader.isOnEmergency();
-      if (!screen.isServing) reader.removeUser(); // This is for the Listo on Cancel btn !!!!!!
+      if (!screen.isServing)
+        reader.removeUser(); // This is for the Listo on Cancel btn !!!!!!
       screen.isServing = selecting_opt = false;
-      if (remove) screen.LockScreen();
+      if (remove)
+        screen.LockScreen();
     }
     else if (btn == Listo) {
       if (selecting_opt) {
-        screen.isMermando = selecting_opt =false;
-      } else screen.isCalibrating = false;
+        screen.isMermando = selecting_opt = false;
+      }
+      else
+        screen.isCalibrating = false;
     }
-    else if (btn == Oz_2){
+    else if (btn == Oz_2) {
       const bool finished = countQty("Taster 2oz", 60);
-      if (finished) commitPurchase("TASTER", ".06");
+      if (finished)
+        commitPurchase("TASTER", ".06");
     }
-    else if (btn == Oz_5){
+    else if (btn == Oz_5) {
       const bool finished = countQty("Taster 5oz", 142);
-      if (finished) commitPurchase("TASTER", ".142");
+      if (finished)
+        commitPurchase("TASTER", ".142");
     }
-    else if (btn == Oz_8){
+    else if (btn == Oz_8) {
       const bool finished = countQty("Medio Vaso 8oz", 236);
-      if (finished) commitPurchase("PINT", ".236");
+      if (finished)
+        commitPurchase("PINT", ".236");
     }
-    else if (btn == Oz_10){
+    else if (btn == Oz_10) {
       const bool finished = countQty("Vaso 10oz", 296);
-      if (finished) commitPurchase("PINT", ".296");
+      if (finished)
+        commitPurchase("PINT", ".296");
     }
-    else if (btn == Oz_16){
+    else if (btn == Oz_16) {
       const bool finished = countQty("Vaso 16oz", 473);
-      if (finished) commitPurchase("PINT", ".473");
+      if (finished)
+        commitPurchase("PINT", ".473");
     }
-    else if (btn == Oz_32){
-      const bool finished = countQty( "Growler 32oz", 1000);
-      if (finished) commitPurchase("GROWLER", "1");
+    else if (btn == Oz_32) {
+      const bool finished = countQty("Growler 32oz", 1000);
+      if (finished)
+        commitPurchase("GROWLER", "1");
     }
-    else if (btn == Oz_64){
+    else if (btn == Oz_64) {
       const bool finished = countQty("Growler 64oz", 2000);
-      if (finished) commitPurchase("GROWLER", "2");
+      if (finished)
+        commitPurchase("GROWLER", "2");
     }
-    else if (btn == Oz_128){
+    else if (btn == Oz_128) {
       const bool finished = countQty("Growler 128oz", 4000);
-      if (finished) commitPurchase("GROWLER", "4");
+      if (finished)
+        commitPurchase("GROWLER", "4");
     }
     else if (btn == cog) {
       screen.Settings();
@@ -517,7 +547,7 @@ void handleTouch(bool remote){
     else if (btn == Calibrar) {
       const uint16_t merma_pulses = countQty(true);
       screen.saveCalibration(merma_pulses);
-      //commitPurchase("MERMA", merma_pulses/PPM );
+      // commitPurchase("MERMA", merma_pulses/PPM );
     }
     else if (btn == Actualizar) {
       otaUpdating();
@@ -531,7 +561,7 @@ void handleTouch(bool remote){
       screen.LockScreen();
     }
     else if (btn == Guardar) {
-      const float new_ppm = pulse_counter/300.00;
+      const float new_ppm = pulse_counter / 300.00;
       DEBUG(("Guardando ppm: " + (String)new_ppm + "").c_str());
       line.savePPM(new_ppm);
       screen.ppm = new_ppm;
@@ -544,20 +574,29 @@ void handleTouch(bool remote){
     }
     else if (btn == BOOT_WITH_FILE) {
       DEBUG("BOOT_WITH_FILE");
-      const char * line_data = line.getInfoFromSF().c_str();
+      const char *line_data = line.getInfoFromSF().c_str();
       screen.setInfo(line_data);
     }
     else if (btn == ENTER_CALIBRATION_FACTOR) {
-      screen.enterCalibrationFactor([&](float value) {
+      screen.enterCalibrationFactor([&](float value)
+                                    {
         line.savePPM(value);
         screen.ppm = value;
         DEBUG(("Factor guardado: " + String(value,3)).c_str());
         // vuelves al menú
-        screen.LockScreen();
-      });
+        screen.LockScreen(); });
     }
-  } 
-  else if(redeem_beer){
+    else if (btn == RESET) {
+      ESP.restart();
+    }
+    else if (btn == DISPLAY_INFO) {
+      const char *line_data = line.getInfoFromSF().c_str();
+      DEBUG(line_data);
+      screen.LockScreen();
+    }
+  }
+  else if (redeem_beer)
+  {
     redeem_beer = reset = false;
     const bool finished = countQty("Vaso 16oz", 473);
     if (finished) {
@@ -568,8 +607,8 @@ void handleTouch(bool remote){
   }
 }
 
-bool countQty(String screen_msg, uint16_t ml){
-  attachInterrupt(FLOWMETER_PIN, flowCounter, RISING); // THIS SHOULD BE AT LINE CLASS AND NAMED AS OPEN VALVE
+bool countQty(String screen_msg, uint16_t ml) {
+  attachInterrupt(digitalPinToInterrupt(FLOWMETER_PIN), flowCounter, RISING); // THIS SHOULD BE AT LINE CLASS AND NAMED AS OPEN VALVE
   digitalWrite(VALVE_PIN, HIGH);
   screen.servingScreen(true, 0, screen_msg);
   filling(screen.ppm * ml);
@@ -577,8 +616,8 @@ bool countQty(String screen_msg, uint16_t ml){
   return screen.isServing;
 }
 
-uint16_t countQty(bool calibrate){
-  attachInterrupt(FLOWMETER_PIN, flowCounter, RISING);  // THIS SHOULD BE AT LINE CLASS AND NAMED AS OPEN VALVE
+uint16_t countQty(bool calibrate) {
+  attachInterrupt(digitalPinToInterrupt(FLOWMETER_PIN), flowCounter, RISING); // THIS SHOULD BE AT LINE CLASS AND NAMED AS OPEN VALVE
   digitalWrite(VALVE_PIN, HIGH);
   calibrate ? screen.calibrationScreen(0) : screen.mermar(0);
   const uint16_t merma_pulses = mermando();
@@ -586,9 +625,9 @@ uint16_t countQty(bool calibrate){
   return merma_pulses;
 }
 
-void otaUpdating(){
+void otaUpdating() {
   screen.otaUpdateScreen();
-  wifi.setUpOTA(screen.noLinea); 
+  wifi.setUpOTA(screen.noLinea);
   while (screen.actualScreen == OTA_UPDATE_SCR) {
     handleTouch();
     wifi.loopOTA();
@@ -596,9 +635,9 @@ void otaUpdating(){
   wifi.stopOTA();
 }
 
-JsonObject decodeJson(const char * payload){
+JsonObject decodeJson(const char *payload) {
   JsonObject json_response = JsonObject();
-  DynamicJsonDocument doc (1024);
+  DynamicJsonDocument doc(1024);
   auto error = deserializeJson(doc, payload);
   if (error) {
     DEBUG("deserializeJson() failed with code ");
@@ -609,13 +648,13 @@ JsonObject decodeJson(const char * payload){
   return json_response;
 }
 
-bool validateJsonResponse(JsonObject json_response){
-  const char* confirmation = json_response["confirmation"];
+bool validateJsonResponse(JsonObject json_response) {
+  const char *confirmation = json_response["confirmation"];
   return strcmp(confirmation, "success") == 0;
 }
 
-void DEBUG(const char *message){
-  char buffer[100];
+void DEBUG(const char *message) {
+  char buffer[250];
   snprintf(buffer, sizeof(buffer), "[Main]: %s", message);
   logger.println(buffer);
 }

@@ -243,11 +243,15 @@ void Screen::Settings(){
   entryOptions.push_back(Calibrar);
   entryOptions.push_back(Actualizar);
   entryOptions.push_back(ENTER_CALIBRATION_FACTOR);
+  entryOptions.push_back(DISPLAY_INFO);
+  entryOptions.push_back(RESET);
   entryOptions.push_back(Back);
   DEBUG("1.- Calibra");
   DEBUG("2.- Update OTA");
   DEBUG("3.- Enter Calibration Factor");
-  DEBUG("4.- Back");
+  DEBUG("4.- Display info");
+  DEBUG("5.- Reset");
+  DEBUG("6.- Back");
 }
 
 void Screen::calibrationScreen(uint16_t ml){

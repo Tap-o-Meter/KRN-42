@@ -1,8 +1,10 @@
 // Use this file to store all of the private credentials
 // and connection details
 
-#define SECRET_SSID "ChikillaBarra"		// replace MySSID with your WiFi network name
-#define SECRET_PASS "ta010116"
+#define SECRET_SSID "tapOmeter"		// replace MySSID with your WiFi network name
+#define SECRET_PASS "S=klogw2"
+#define DEFAULT_WIFI true
+
 #define RST_PIN 22
 #define SS_PIN 21
 

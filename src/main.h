@@ -15,6 +15,7 @@
 #include "secrets.h"
 #include <esp_wifi.h>
 #include "SocketComm.h"
+#include "driver/gpio.h"
 #include <ArduinoJson.h>
 // #include <WiFiManager32.h>
 #include "freertos/portmacro.h"

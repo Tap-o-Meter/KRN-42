@@ -56,8 +56,10 @@ enum buttons {
   Actualizar,      
   Retry,           
   CONFIGURAR_WIFI, 
-  BOOT_WITH_FILE,  
-  ENTER_CALIBRATION_FACTOR
+  BOOT_WITH_FILE,
+  RESET,  
+  ENTER_CALIBRATION_FACTOR,
+  DISPLAY_INFO
 };
 
 //ERORS
