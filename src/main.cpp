@@ -342,7 +342,7 @@ void setUpWiFi() {
   if (wifi.theresValidSSID() || DEFAULT_WIFI) {
     vTaskDelay(random(2000) / portTICK_PERIOD_MS);
     screen.connecting();
-    api.setConfigString(String(ESP.getEfuseMac(),HEX));
+    api.setConfigString(ID);
 
     if (wifi.setUpWiFi())
       setUpSocketConnection();
@@ -402,7 +402,7 @@ void filling(uint16_t pulses){
     const uint8_t percent = (uint8_t)((100*pulse_counter)/pulses);
     if (percent >( last_percent + incrementor) ) {
       // line.savePouredPulses(pulse_counter);
-      api.updateStatus(pulse_counter/screen.ppm, String(ESP.getEfuseMac(),HEX));
+      api.updateStatus(pulse_counter/screen.ppm, ID);
 
       // if      (percent == min_qty) screen.hideCancell(); //hide cancel
       if (percent == 70) screen.showReady(); // show listo

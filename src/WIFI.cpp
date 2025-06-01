@@ -110,7 +110,7 @@ void WIFI::setUpWebServer(bool serial){
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      req->send(200, "application/json", "{\"id\":\""+WiFi.macAddress()+"\"}");
+      req->send(200, "application/json", "{\"id\":\""+ID+"\"}");
       delay(300);
       ESP.restart();
     } else {
@@ -222,10 +222,6 @@ void WIFI::stopOTA(){
 
 bool WIFI::isConnected(){
   return WiFi.status() == WL_CONNECTED;
-}
-
-String WIFI::macAddress(){
-  return WiFi.macAddress();
 }
 
 void WIFI::DEBUG(const char *message){

@@ -12,16 +12,17 @@
 #define RETRY_TIME 2000
 #define WIFI_RETRIES_ADD 65
 
+#define ID String(ESP.getEfuseMac(), HEX)
+
 class WIFI {
   public:
-    const String ap_name = "Line_"+String((uint32_t)ESP.getEfuseMac(), HEX);
+    const String ap_name = "Line_"+ID;
     String getIP();
     void stopOTA();
     void loopOTA();
     void startMDNS();
     void eneableAP();
     bool isConnected();
-    String macAddress();
     bool theresValidSSID();
     void resetWiFiSettings();
     void setUpOTA(uint8_t tap_number);
