@@ -12,7 +12,8 @@ portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
 
 int8_t remote_type = NONE;
 uint16_t pulse_counter = 0;
-bool reset = false, selecting_opt = false, loading = false, redeem_beer = false, remote_sell;
+bool reset = false, selecting_opt = false, loading = false, redeem_beer = false,
+     remote_sell = false;
 
 //-------------------------------------->Set UP
 void setup() {
