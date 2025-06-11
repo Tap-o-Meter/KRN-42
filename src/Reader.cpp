@@ -1,5 +1,4 @@
 #include "Reader.h"
-#include <SocketIoClient.h>
 #include <WiFiClient.h>
 
 
