@@ -4,7 +4,6 @@
 #include "Screen.h"
 #include "Logger.h"
 #include <ArduinoJson.h>
-#include <SocketIoClient.h>
 
 struct newWorker {
   String id; 

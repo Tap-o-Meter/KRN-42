@@ -14,7 +14,7 @@
 #include "Logger.h"
 #include "secrets.h"
 #include <esp_wifi.h>
-#include "SocketComm.h"
+#include "MqttComm.h"
 #include "driver/gpio.h"
 #include <ArduinoJson.h>
 // #include <WiFiManager32.h>
@@ -29,11 +29,11 @@ void flowCounter();                                     // THIS CAN BE MOVED TO 
 void lineUnlocked();                                    
 uint16_t mermando();                                    // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 uint16_t safeReadCounter();
-void setUpSocketConnection();                           
+void setUpMqttConnection();
 void filling(uint16_t pulses);                          // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 uint16_t countQty(bool calibrate);
 void handleTouch(bool remote = false);
-void socketManager(void * pvParameters);                // THIS SHOULD BE MOVED TO SOCKETCOMM.H
+void mqttManager(void * pvParameters);                 // THIS SHOULD BE MOVED TO MqttComm.h
 bool countQty(String screen_msg, uint16_t ml);          // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 void SetConnectedScreen(bool retriable = false);        
 JsonObject decodeJson(const char * payload);

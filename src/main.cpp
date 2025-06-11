@@ -5,7 +5,7 @@
 WIFI wifi;
 Line line;
 Screen screen;
-SocketIO api;
+MqttIO api;
 
 Reader reader;
 portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
@@ -145,7 +145,7 @@ void lineUnlocked() {
   }
 }
 
-//-------------------------------------->Socket Handlers
+//-------------------------------------->MQTT Handlers
 void event(const char *payload, size_t length) {
   // THIS IS FOR DEBUGGING PURPOSES
   DEBUG(("got message:" + String(payload)).c_str());
@@ -320,7 +320,7 @@ void stopPour(const char *payload, size_t length){
 }
 
 //-------------------------------------->Async Funtions
-void socketManager(void *pvParameters) {
+void mqttManager(void *pvParameters) {
   while (1){
     // webSocket.loop();
     api.loop();
@@ -345,7 +345,7 @@ void setUpWiFi() {
     api.setConfigString(ID);
 
     if (wifi.setUpWiFi())
-      setUpSocketConnection();
+      setUpMqttConnection();
     else
       bootOptions();
   }
@@ -362,7 +362,7 @@ void bootOptions() {
     handleTouch();
 }
 
-void setUpSocketConnection() {
+void setUpMqttConnection() {
 
   api.on(CONNECT, onConnect);
   api.on(CLAIM_BEER, onClaimBeer);
@@ -379,7 +379,7 @@ void setUpSocketConnection() {
   api.on(REQUEST_DEVICE, requestDevice);
 
   api.connect(wifi.getIP().c_str());
-  xTaskCreatePinnedToCore(socketManager, "Socket loop", 16384, NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO SOCKETCOMM.H
+  xTaskCreatePinnedToCore(mqttManager, "MQTT loop", 16384, NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO MqttComm.h
 
   // disableCore0WDT();
   // disableCore1WDT();
