@@ -377,7 +377,7 @@ void setUpMqttConnection() {
   api.on(TOPIC_STOP_POUR, stopPour);
   api.on(TOPIC_REQUEST_DEVICE, requestDevice);
 
-  api.connect(wifi.getIP().c_str()); // Note: This should be MQTT broker IP, not local IP
+  api.connect(wifi.getIP().c_str()); // TODO: Replace with actual MQTT broker IP address
   xTaskCreatePinnedToCore(mqttManager, "MQTT loop", 16384, NULL, 1, NULL, CORE0);
 
   // disableCore0WDT();
