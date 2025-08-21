@@ -18,6 +18,11 @@
 // ------------------------------>   Socket IO   <------------------------------
 #define PORT 3001
 
+// ------------------------------>     MQTT       <------------------------------
+#define MQTT_PORT 1883
+// Note: Update the MQTT broker IP in setUpMqttConnection() function
+// Currently using wifi.getIP().c_str() which should be changed to actual MQTT broker IP
+
 // ------------------------------>     I/O's     <------------------------------
 #define FLOWMETER_PIN 13
 #define VALVE_PIN 32

@@ -29,11 +29,11 @@ void flowCounter();                                     // THIS CAN BE MOVED TO 
 void lineUnlocked();                                    
 uint16_t mermando();                                    // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 uint16_t safeReadCounter();
-void setUpSocketConnection();                           
+void setUpMqttConnection();                           
 void filling(uint16_t pulses);                          // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 uint16_t countQty(bool calibrate);
 void handleTouch(bool remote = false);
-void socketManager(void * pvParameters);                // THIS SHOULD BE MOVED TO SOCKETCOMM.H
+void mqttManager(void * pvParameters);                  // THIS SHOULD BE MOVED TO SOCKETCOMM.H
 bool countQty(String screen_msg, uint16_t ml);          // ALL THE LINE STUFF SHOULD BE MOVED TO LINE.H
 void SetConnectedScreen(bool retriable = false);        
 JsonObject decodeJson(const char * payload);
@@ -52,6 +52,8 @@ void validateClient(const char * payload, size_t length);
 void validateResponse(const char * payload, size_t length);
 void onNewEmergencyCard(const char * payload, size_t length);
 void onDisconnectedLine(const char * payload, size_t length);
+void startPour(const char * payload, size_t length);
+void stopPour(const char * payload, size_t length);
 void requestDevice(const char * payload, size_t length);
 
 //Logger

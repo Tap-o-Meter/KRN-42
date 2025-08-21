@@ -1,43 +1,45 @@
-#ifndef MY_SOCKET_H
-#define MY_SOCKET_H
+#ifndef MY_MQTT_H
+#define MY_MQTT_H
 #include <Arduino.h>
 #include "Logger.h"
 #include "secrets.h"
 #include <ArduinoJson.h>
-// #include <esp_task_wdt.h>
-#include <SocketIoClient.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <map>
+#include <functional>
 
 
 #define JSON_END        "\"}"
 
-// ------------------------------>Socket Handlers <------------------------------
-#define VALIDATED_USER      "validated user"
-#define CONNECT             "connect"
-#define DISCONNECT          "disconnect"
-#define DEVICE_INFO         "device info"
-#define CHANGE_LINE         "changeLine"
-#define DISCONNECTED_LINE   "disconnectedLine"
-#define ADD_EMERGENCY_CARD  "addEmergencyCard"
-#define VALIDATED_CLIENT    "validated client"
-#define CLAIM_BEER          "claimBeer"
-#define REMOTE_SELL         "remoteSell"
-#define START_POUR          "start_pour"
-#define STOP_POUR           "stop_pour"
-#define REQUEST_DEVICE      "request_device"
+// ------------------------------>MQTT Topics <------------------------------
+#define TOPIC_VALIDATED_USER      "validated_user"
+#define TOPIC_CONNECT             "connect"
+#define TOPIC_DISCONNECT          "disconnect"
+#define TOPIC_DEVICE_INFO         "device_info"
+#define TOPIC_CHANGE_LINE         "change_line"
+#define TOPIC_DISCONNECTED_LINE   "disconnected_line"
+#define TOPIC_ADD_EMERGENCY_CARD  "add_emergency_card"
+#define TOPIC_VALIDATED_CLIENT    "validated_client"
+#define TOPIC_CLAIM_BEER          "claim_beer"
+#define TOPIC_REMOTE_SELL         "remote_sell"
+#define TOPIC_START_POUR          "start_pour"
+#define TOPIC_STOP_POUR           "stop_pour"
+#define TOPIC_REQUEST_DEVICE      "request_device"
 
-// ------------------------------>  Socket events <------------------------------
-#define REDEEM_BEER         "redeemBeer"
-#define SET_UP              "setUp"
-#define GET_WORKER          "getWorker"
-#define GET_CLIENT          "getClient"
-#define SALE_COMPLETE       "sale_complete"
-#define UPDATE_STATUS       "update_status"
-#define FINISHED_POUR       "finished_pour"
-#define LINE_NOT_AVAILABLE  "line_not_available"
-#define CONFIRM_ORDER       "confirm_order"
+// ------------------------------>MQTT Topics (outgoing) <------------------------------
+#define TOPIC_REDEEM_BEER         "redeem_beer"
+#define TOPIC_SET_UP              "set_up"
+#define TOPIC_GET_WORKER          "get_worker"
+#define TOPIC_GET_CLIENT          "get_client"
+#define TOPIC_SALE_COMPLETE       "sale_complete"
+#define TOPIC_UPDATE_STATUS       "update_status"
+#define TOPIC_FINISHED_POUR       "finished_pour"
+#define TOPIC_LINE_NOT_AVAILABLE  "line_not_available"
+#define TOPIC_CONFIRM_ORDER       "confirm_order"
 
 
-class SocketIO {
+class MqttComm {
   struct response{
     String worker_id;
     String worker_name;
@@ -50,20 +52,32 @@ class SocketIO {
     void requestLineData();
     void confirmOrder(String user);
     String getConfigString();
-    void connect(const char * ip);
+    void connect(const char * broker_ip);
     void updateStatus(uint16_t ml, String line_id);
     void setConfigString(String line_id);
     void redeemBeer(String client_id, String keg_id);
     void fetchCardId(String card_id, bool client = false);
-    void on(const char* event, std::function<void (const char * payload, size_t length)> func);
-    // void finishedPour(String line_id, String worker_id, String keg_id, String qty, String concept);
+    void on(const char* topic, std::function<void (const char * payload, size_t length)> func);
     void registerPurchase(String client_id, String worker_id, String type, String qty, String keg_id);
+    
   private:
-    SocketIoClient webSocket;
+    WiFiClient wifiClient;
+    PubSubClient mqttClient;
     String set_up = "";
-
+    String deviceId = "";
+    std::map<String, std::function<void (const char * payload, size_t length)>> topicHandlers;
+    
+    // MQTT callback for incoming messages
+    static void mqttCallback(char* topic, byte* payload, unsigned int length);
+    static MqttComm* instance; // Static instance for callback
+    void handleMessage(char* topic, byte* payload, unsigned int length);
+    
+    // Helper methods
+    void publish(const char* topic, const char* payload);
+    void subscribe(const char* topic);
+    String getTopicPrefix();
+    
     //Logger
     void DEBUG(const char *message);
-    // void ERROR(ErrorType error);
 };
 #endif

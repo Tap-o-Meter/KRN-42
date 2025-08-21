@@ -5,7 +5,7 @@
 WIFI wifi;
 Line line;
 Screen screen;
-SocketIO api;
+MqttComm api;
 
 Reader reader;
 portMUX_TYPE muxCounter = portMUX_INITIALIZER_UNLOCKED;
@@ -320,9 +320,8 @@ void stopPour(const char *payload, size_t length){
 }
 
 //-------------------------------------->Async Funtions
-void socketManager(void *pvParameters) {
+void mqttManager(void *pvParameters) {
   while (1){
-    // webSocket.loop();
     api.loop();
     vTaskDelay(100 / portTICK_PERIOD_MS);
   }
@@ -345,7 +344,7 @@ void setUpWiFi() {
     api.setConfigString(ID);
 
     if (wifi.setUpWiFi())
-      setUpSocketConnection();
+      setUpMqttConnection();
     else
       bootOptions();
   }
@@ -362,24 +361,24 @@ void bootOptions() {
     handleTouch();
 }
 
-void setUpSocketConnection() {
+void setUpMqttConnection() {
 
-  api.on(CONNECT, onConnect);
-  api.on(CLAIM_BEER, onClaimBeer);
-  api.on(DISCONNECT, onDisconnect);
-  api.on(CHANGE_LINE, onLineChange);
-  api.on(REMOTE_SELL, onRemoteSell);
-  api.on(DEVICE_INFO, onInfoRecived);
-  api.on(VALIDATED_CLIENT, validateClient);
-  api.on(VALIDATED_USER, validateResponse);
-  api.on(DISCONNECTED_LINE, onDisconnectedLine);
-  api.on(ADD_EMERGENCY_CARD, onNewEmergencyCard);
-  api.on(START_POUR, startPour);
-  api.on(STOP_POUR, stopPour);
-  api.on(REQUEST_DEVICE, requestDevice);
+  api.on(TOPIC_CONNECT, onConnect);
+  api.on(TOPIC_CLAIM_BEER, onClaimBeer);
+  api.on(TOPIC_DISCONNECT, onDisconnect);
+  api.on(TOPIC_CHANGE_LINE, onLineChange);
+  api.on(TOPIC_REMOTE_SELL, onRemoteSell);
+  api.on(TOPIC_DEVICE_INFO, onInfoRecived);
+  api.on(TOPIC_VALIDATED_CLIENT, validateClient);
+  api.on(TOPIC_VALIDATED_USER, validateResponse);
+  api.on(TOPIC_DISCONNECTED_LINE, onDisconnectedLine);
+  api.on(TOPIC_ADD_EMERGENCY_CARD, onNewEmergencyCard);
+  api.on(TOPIC_START_POUR, startPour);
+  api.on(TOPIC_STOP_POUR, stopPour);
+  api.on(TOPIC_REQUEST_DEVICE, requestDevice);
 
-  api.connect(wifi.getIP().c_str());
-  xTaskCreatePinnedToCore(socketManager, "Socket loop", 16384, NULL, 1, NULL, CORE0); // THIS SHOULD BE MOVED TO SOCKETCOMM.H
+  api.connect(wifi.getIP().c_str()); // TODO: Replace with actual MQTT broker IP address
+  xTaskCreatePinnedToCore(mqttManager, "MQTT loop", 16384, NULL, 1, NULL, CORE0);
 
   // disableCore0WDT();
   // disableCore1WDT();
