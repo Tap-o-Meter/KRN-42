@@ -1,5 +1,9 @@
 #ifndef MY_SOCKET_H
 #define MY_SOCKET_H
+//
+// SocketComm.h - Optimized Socket Communication for ESP32 Tap-o-Meter
+// Includes rate limiting and queue management to prevent crashes during pouring
+//
 #include <Arduino.h>
 #include "Logger.h"
 #include "secrets.h"
