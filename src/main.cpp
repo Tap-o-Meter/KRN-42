@@ -80,24 +80,24 @@ void loop() {
         break;
       }
 
-      // Wi-Fi
-      if (!wifi.isConnected()) {
+      // Wi-Fi - avoid reconnection attempts during pouring
+      if (!wifi.isConnected() && !screen.isServing) {
         wifi.reconnect(true);
         if (!screen.isOnEmergency()) {
           screen.noWifi();
           screen.setEmergency(true);
         }
-      } else if (screen.isOnEmergency() && screen.getError() == WIFI_NOT_CONNECTED) {
+      } else if (screen.isOnEmergency() && screen.getError() == WIFI_NOT_CONNECTED && wifi.isConnected()) {
         screen.setEmergency(false);
       }
 
-      // WebSocket / SocketIO
-      if (!api.isConnected()) {
+      // WebSocket / SocketIO - avoid connection checks during pouring
+      if (!api.isConnected() && !screen.isServing) {
         if (!screen.isOnEmergency()) {
           screen.notConnectedToSever();
           screen.setEmergency(true);
         }
-      } else if (screen.isOnEmergency()) {
+      } else if (screen.isOnEmergency() && api.isConnected()) {
         screen.setEmergency(false);
         api.requestLineData();
         screen.tapCard();
@@ -297,13 +297,17 @@ void startPour(const char* payload, size_t length) {
 void stopPour(const char* payload, size_t length) {
   if (!screen.isServing) return;
   screen.isServing = false;
+  api.setPouring(false); // Restore normal socket communication
 }
 
 //-------------------------------------->Async Task for Socket Loop
 void socketManager(void* pvParameters) {
   while (1) {
     api.loop();
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    
+    // Increase delay during pouring operations to reduce resource competition
+    uint32_t delay = api.isPouring() ? 250 : 100; // 250ms during pouring, 100ms normal
+    vTaskDelay(delay / portTICK_PERIOD_MS);
   }
 }
  
@@ -362,8 +366,11 @@ void filling(uint16_t pulses) {
   pulse_counter = 0;
   portEXIT_CRITICAL(&muxCounter);
 
+  // Optimize socket communication for pouring
+  api.setPouring(true);
+  
   uint8_t last_percent = 0;
-  const uint8_t incrementor = (pulses / screen.ppm) < 200 ? 5 : 2;
+  const uint8_t incrementor = (pulses / screen.ppm) < 200 ? 10 : 5; // Increase incrementor to reduce updates
   uint32_t time_out = millis() + SERVING_TIME_OUT;
 
   while (screen.isServing && (safeReadCounter() < pulses) && millis() < time_out) {
@@ -374,7 +381,7 @@ void filling(uint16_t pulses) {
       handleTouch();
     }
 
-    // cálculo de porcentaje
+    // cálculo de porcentaje - send updates less frequently
     uint8_t percent = (uint8_t)((100 * count) / pulses);
     if (percent > last_percent + incrementor) {
       api.updateStatus(count / screen.ppm, wifi.macAddress());
@@ -385,6 +392,9 @@ void filling(uint16_t pulses) {
     }
   }
 
+  // Restore normal socket communication
+  api.setPouring(false);
+  
   // tras el bucle, asegúrate de cerrar válvula fuera de aquí
   selecting_opt = false;
   if (last_percent > 70 && !screen.isServing) {
@@ -447,6 +457,7 @@ void commitPurchase(String concept, String qty, String user) {
     api.registerPurchase(client_id, fixed_user, concept, qty, screen.kegId);
   }
   screen.isServing = false;
+  api.setPouring(false); // Restore normal socket communication
   reader.removeUser();
 }
 
@@ -472,6 +483,7 @@ void handleTouch(bool remote) {
       bool remove = reader.getWorkerId().length() < 4 && !reader.isOnEmergency();
       if (!screen.isServing) reader.removeUser();
       screen.isServing = selecting_opt = false;
+      api.setPouring(false); // Restore normal socket communication
       if (remove) screen.LockScreen();
     }
     else if (btn == Listo) {

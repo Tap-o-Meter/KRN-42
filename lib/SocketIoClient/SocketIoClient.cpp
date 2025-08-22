@@ -64,10 +64,16 @@ void SocketIoClient::initialize() {
 
 void SocketIoClient::loop() {
 	_webSocket.loop();
-	for(auto packet=_packets.begin(); packet != _packets.end();) {
+	
+	// Process packets with size limit to prevent memory issues
+	size_t maxProcessPerLoop = 5; // Limit processing to prevent blocking
+	size_t processed = 0;
+	
+	for(auto packet=_packets.begin(); packet != _packets.end() && processed < maxProcessPerLoop;) {
 		if(_webSocket.sendTXT(*packet)) {
 			SOCKETIOCLIENT_DEBUG("[SIoC] packet \"%s\" emitted\n", packet->c_str());
 			packet = _packets.erase(packet);
+			processed++;
 		} else {
 			++packet;
 		}
@@ -85,6 +91,13 @@ void SocketIoClient::on(const char* event, std::function<void (const char * payl
 }
 
 void SocketIoClient::emit(const char* event, const char * payload) {
+	// Prevent message queue overflow
+	const size_t MAX_QUEUE_SIZE = 20;
+	if (_packets.size() >= MAX_QUEUE_SIZE) {
+		SOCKETIOCLIENT_DEBUG("[SIoC] Message queue full, dropping oldest packet\n");
+		_packets.erase(_packets.begin()); // Remove oldest message
+	}
+	
 	String msg = String("42[\"");
 	msg += event;
 	msg += "\"";
