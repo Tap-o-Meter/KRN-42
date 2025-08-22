@@ -54,7 +54,24 @@ void SocketIO::fetchCardId(String card_id, bool client){
 }
 
 void SocketIO::updateStatus(uint16_t ml, String line_id){
-  // webSocket.emit(UPDATE_STATUS, "{\"pouredVolume\": " + (String)pulse_counter + ", \"lineId\": \"" + line_id + JSON_END);
+  // Rate limiting during pouring operations
+  uint32_t now = millis();
+  uint32_t interval = _isPouringMode ? STATUS_UPDATE_INTERVAL_POURING : STATUS_UPDATE_INTERVAL_NORMAL;
+  
+  // Skip update if too frequent or same value
+  if ((now - _lastStatusUpdate < interval) || (_lastStatusValue == ml && _isPouringMode)) {
+    return;
+  }
+  
+  // Check message queue size to prevent overflow
+  if (webSocket.getPendingMessageCount() >= MAX_PENDING_MESSAGES) {
+    DEBUG("Message queue full, skipping status update");
+    return;
+  }
+  
+  _lastStatusUpdate = now;
+  _lastStatusValue = ml;
+  
   esp_task_wdt_reset();
   webSocket.emit(UPDATE_STATUS, ("{\"pouredVolume\": " + (String)ml + ", \"lineId\": \"" + line_id + JSON_END).c_str());
 }
@@ -82,4 +99,31 @@ void SocketIO::DEBUG(const char *message){
   char buffer[100];
   snprintf(buffer, sizeof(buffer), "[SocketIO]: %s", message);
   logger.println(buffer);
+}
+
+// Optimization methods for pouring operations
+void SocketIO::setPouring(bool pouring) {
+  _isPouringMode = pouring;
+  if (pouring) {
+    optimizeForPouring();
+  } else {
+    restoreNormalOperation();
+  }
+}
+
+bool SocketIO::isPouring() {
+  return _isPouringMode;
+}
+
+void SocketIO::optimizeForPouring() {
+  DEBUG("Optimizing socket communication for pouring");
+  // Reset rate limiting counters
+  _lastStatusUpdate = 0;
+  _lastStatusValue = 0;
+}
+
+void SocketIO::restoreNormalOperation() {
+  DEBUG("Restoring normal socket communication");
+  _lastStatusUpdate = 0;
+  _lastStatusValue = 0;
 }

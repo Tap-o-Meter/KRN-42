@@ -1,5 +1,9 @@
 #ifndef MY_SOCKET_H
 #define MY_SOCKET_H
+//
+// SocketComm.h - Optimized Socket Communication for ESP32 Tap-o-Meter
+// Includes rate limiting and queue management to prevent crashes during pouring
+//
 #include <Arduino.h>
 #include "Logger.h"
 #include "secrets.h"
@@ -60,9 +64,24 @@ class SocketIO {
     void on(const char* event, std::function<void (const char * payload, size_t length)> func);
     // void finishedPour(String line_id, String worker_id, String keg_id, String qty, String concept);
     void registerPurchase(String client_id, String worker_id, String concept, String qty, String keg_id);
+    
+    // Optimization methods
+    void setPouring(bool pouring);
+    bool isPouring();
+    void optimizeForPouring();
+    void restoreNormalOperation();
+    
   private:
     SocketIoClient webSocket;
     String set_up = "";
+    
+    // Rate limiting for pouring operations
+    bool _isPouringMode = false;
+    uint32_t _lastStatusUpdate = 0;
+    uint16_t _lastStatusValue = 0;
+    static const uint32_t STATUS_UPDATE_INTERVAL_NORMAL = 500;  // 500ms normal
+    static const uint32_t STATUS_UPDATE_INTERVAL_POURING = 2000; // 2s during pouring
+    static const uint8_t MAX_PENDING_MESSAGES = 10; // Limit message queue
 
     //Logger
     void DEBUG(const char *message);

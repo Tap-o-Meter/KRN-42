@@ -40,6 +40,10 @@ public:
 	void emit(const char* event, const char * payload = NULL);
 	void disconnect();
 	void setAuthorization(const char * user, const char * password);
+	
+	// Optimization methods
+	size_t getPendingMessageCount() const { return _packets.size(); }
+	void clearMessageQueue() { _packets.clear(); }
 };
 
 #endif
